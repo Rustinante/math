@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["Aaron"]
 edition = "2018"
 license = "Apache-2.0"
+description = "A math library"
+repository = "https://github.com/AaronSteel/analytic"
 
 [dependencies]
 num = "0.2"
