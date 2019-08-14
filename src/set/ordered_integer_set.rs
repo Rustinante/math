@@ -70,7 +70,7 @@ impl<E: Integer + Copy> Interval for ContiguousIntegerSet<E> {
 
     #[inline]
     fn length(&self) -> E {
-        self.end - self.start
+        self.end - self.start + E::one()
     }
 }
 
@@ -208,6 +208,11 @@ impl<E: Integer + Copy> Iterator for ContiguousIntegerSetIter<E> {
     }
 }
 
+/// An `OrderedIntegerSet` consists of a sequence of `ContiguousIntegerSet` that are sorted
+/// in ascending order where successive intervals are not coalesceable, i.e. if intervals A and B
+/// are successive intervals, then A.end + 1 < B.start
+/// E.g. An `OrderedIntegerSet` containing `ContiguousIntegerSet`s [2,3] and [5,7] will represent the set of
+/// integers {2, 3, 5, 6, 7}
 #[derive(Clone, PartialEq, Debug)]
 pub struct OrderedIntegerSet<E: Integer + Copy + ToPrimitive> {
     intervals: Vec<ContiguousIntegerSet<E>>
@@ -220,6 +225,8 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
         }
     }
 
+    /// Returns the smallest element in the set
+    /// e.g. {[1,3], [4,8]} -> 1
     pub fn first(&self) -> Option<E> {
         match self.intervals.first() {
             Some(interval) => {
@@ -233,6 +240,8 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
         }
     }
 
+    /// Returns the largest element in the set
+    /// e.g. {[1,3], [4,8]} -> 8
     pub fn last(&self) -> Option<E> {
         match self.intervals.last() {
             Some(interval) => {
@@ -246,6 +255,8 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
         }
     }
 
+    /// Returns both the smallest and the largest element in the set
+    /// e.g. {[1,3], [4,8]} -> the tuple (1, 8)
     pub fn first_and_last(&self) -> Option<(E, E)> {
         if let Some(first) = self.first() {
             if let Some(last) = self.last() {
@@ -255,10 +266,21 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
         None
     }
 
+    /// The `slicer` can be any struct that implements the `Slicing` trait.
+    /// For example, the `Slicing` trait has been implemented for the `Range<usize>` struct.
+    /// For an `OrderedIntegerSet` containing n elements, the `Range<usize>` object
+    /// created by `a..b` will slice the integer set and return all the elements from the a-th (inclusive)
+    /// to the b-th (exclusive) in the form of an `OrderedIntegerSet`
     pub fn slice<'a, I: Slicing<&'a OrderedIntegerSet<E>, OrderedIntegerSet<E>>>(&'a self, slicer: I) -> OrderedIntegerSet<E> {
         slicer.slice(self)
     }
 
+    /// Creates an `OrderedIntegerSet` where the i-th interval is represented by
+    /// the i-th two-element array in `slice`.
+    /// E.g. [[2, 3], [5, 7]] will create an `OrderedIntegerSet` representing {2, 3, 5, 6, 7}, where
+    /// the contiguous integers are stored as `ContiguousIntegerSet`s
+    ///
+    /// Note that the intervals in the `slice` parameters do not have to be sorted or non-overlapping.
     pub fn from_slice(slice: &[[E; 2]]) -> OrderedIntegerSet<E> {
         let intervals = slice.iter()
                              .map(|pair| ContiguousIntegerSet::new(pair[0], pair[1]))

@@ -1,11 +1,11 @@
 [package]
 name = "analytic"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Aaron"]
 edition = "2018"
 license = "Apache-2.0"
 description = "A math library"
-repository = "https://github.com/AaronSteel/analytic"
+repository = "https://github.com/Rustinante/analytic"
 
 [dependencies]
 num = "0.2"
