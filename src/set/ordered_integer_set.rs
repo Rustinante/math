@@ -138,7 +138,7 @@ impl<E: Integer + Copy + ToPrimitive> Finite for ContiguousIntegerSet<E> {
 }
 
 /// returns an interval if only if the two intervals can be merged into
-/// a single non-empty interval
+/// a single non-empty interval.
 /// An empty interval can be merged with any other non-empty interval
 impl<E: Integer + Copy> Coalesce<Self> for ContiguousIntegerSet<E> {
     fn coalesce_with(&self, other: &Self) -> Option<Self> {
@@ -211,6 +211,7 @@ impl<E: Integer + Copy> Iterator for ContiguousIntegerSetIter<E> {
 /// An `OrderedIntegerSet` consists of a sequence of `ContiguousIntegerSet` that are sorted
 /// in ascending order where successive intervals are not coalesceable, i.e. if intervals A and B
 /// are successive intervals, then A.end + 1 < B.start
+///
 /// E.g. An `OrderedIntegerSet` containing `ContiguousIntegerSet`s [2,3] and [5,7] will represent the set of
 /// integers {2, 3, 5, 6, 7}
 #[derive(Clone, PartialEq, Debug)]
@@ -268,6 +269,7 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
 
     /// The `slicer` can be any struct that implements the `Slicing` trait.
     /// For example, the `Slicing` trait has been implemented for the `Range<usize>` struct.
+    ///
     /// For an `OrderedIntegerSet` containing n elements, the `Range<usize>` object
     /// created by `a..b` will slice the integer set and return all the elements from the a-th (inclusive)
     /// to the b-th (exclusive) in the form of an `OrderedIntegerSet`
@@ -277,6 +279,7 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
 
     /// Creates an `OrderedIntegerSet` where the i-th interval is represented by
     /// the i-th two-element array in `slice`.
+    ///
     /// E.g. [[2, 3], [5, 7]] will create an `OrderedIntegerSet` representing {2, 3, 5, 6, 7}, where
     /// the contiguous integers are stored as `ContiguousIntegerSet`s
     ///

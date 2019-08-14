@@ -2,7 +2,7 @@ use num::Num;
 
 /// A one-dimensional interval with a start and an end.
 /// Whether or not the start and end elements are included in the interval depends
-/// on the actual implementer type
+/// on the actual implementor type
 pub trait Interval {
     type Element: Num + Copy;
 
@@ -17,7 +17,7 @@ pub trait Coalesce<T>: std::marker::Sized {
     fn coalesce_with(&self, other: &T) -> Option<Self>;
 }
 
-/// Implementers are container types that should be able to coalesce the contained intervals
+/// implementors are container types that should be able to coalesce the contained intervals
 pub trait CoalesceIntervals<I: Interval<Element=E>, E: Num + Copy>: std::marker::Sized {
     fn to_coalesced_intervals(&self) -> Vec<I>;
 
