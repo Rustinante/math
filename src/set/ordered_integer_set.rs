@@ -14,6 +14,8 @@ use crate::traits::{Collecting, Constructable, ToIterator};
 
 pub mod arithmetic;
 
+type IntegerSetRefinement<E> = Vec<ContiguousIntegerSet<E>>;
+
 /// represents the set of integers in [start, end]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct ContiguousIntegerSet<E: Integer + Copy> {
@@ -143,8 +145,8 @@ impl<E: Integer + Copy + ToPrimitive> Finite for ContiguousIntegerSet<E> {
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> Refineable<ContiguousIntegerSet<E>> for ContiguousIntegerSet<E> {
-    fn get_common_refinement(&self, other: &ContiguousIntegerSet<E>) -> Vec<ContiguousIntegerSet<E>> {
+impl<E: Integer + Copy + ToPrimitive> Refineable<IntegerSetRefinement<E>> for ContiguousIntegerSet<E> {
+    fn get_common_refinement(&self, other: &ContiguousIntegerSet<E>) -> IntegerSetRefinement<E> {
         let (a, b) = self.get_start_and_end();
         let (c, d) = other.get_start_and_end();
         if self.is_empty() {
@@ -397,6 +399,10 @@ impl<E: Integer + Copy + Sum + ToPrimitive> Finite for OrderedIntegerSet<E> {
         self.intervals.iter().map(|&i| i.size()).sum()
     }
 }
+
+//impl<E: Integer + Copy + ToPrimitive> Refineable<IntegerSetRefinement<E>> for OrderedIntegerSet<E> {
+//    fn get_common_refinement(&self, other: OrderedIntegerSet<E>) -> IntegerSetRefinement<E> {}
+//}
 
 impl<E: Integer + Copy + ToPrimitive> From<Vec<ContiguousIntegerSet<E>>> for OrderedIntegerSet<E> {
     fn from(intervals: Vec<ContiguousIntegerSet<E>>) -> OrderedIntegerSet<E> {
