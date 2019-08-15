@@ -15,7 +15,7 @@ use crate::traits::{Collecting, Constructable, ToIterator};
 pub mod arithmetic;
 
 /// represents the set of integers in [start, end]
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct ContiguousIntegerSet<E: Integer + Copy> {
     start: E,
     end: E,
