@@ -9,7 +9,7 @@ use num::traits::cast::ToPrimitive;
 use crate::interval::traits::{Coalesce, CoalesceIntervals, Interval};
 use crate::sample::Sample;
 use crate::search::binary_search::BinarySearch;
-use crate::set::traits::{Finite, Set};
+use crate::set::traits::{Finite, Refineable, Set};
 use crate::traits::{Collecting, Constructable, ToIterator};
 
 pub mod arithmetic;
@@ -30,7 +30,13 @@ impl<E: Integer + Copy> ContiguousIntegerSet<E> {
     }
 
     #[inline]
-    pub fn slice<'a, I: Slicing<&'a ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>>>(&'a self, slicer: I) -> Option<ContiguousIntegerSet<E>> {
+    pub fn get_start_and_end(&self) -> (E, E) {
+        (self.start, self.end)
+    }
+
+    #[inline]
+    pub fn slice<'a, I: Slicing<&'a ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>>>(&'a self, slicer: I)
+        -> Option<ContiguousIntegerSet<E>> {
         slicer.slice(self)
     }
 }
@@ -133,6 +139,49 @@ impl<E: Integer + Copy + ToPrimitive> Finite for ContiguousIntegerSet<E> {
             0
         } else {
             (self.end - self.start + E::one()).to_usize().unwrap()
+        }
+    }
+}
+
+impl<E: Integer + Copy + ToPrimitive> Refineable<ContiguousIntegerSet<E>> for ContiguousIntegerSet<E> {
+    fn get_common_refinement(&self, other: &ContiguousIntegerSet<E>) -> Vec<ContiguousIntegerSet<E>> {
+        let (a, b) = self.get_start_and_end();
+        let (c, d) = other.get_start_and_end();
+        if self.is_empty() {
+            if other.is_empty() {
+                return Vec::new();
+            } else {
+                return vec![other.clone()];
+            }
+        }
+        if other.is_empty() {
+            return vec![self.clone()];
+        }
+        match self.intersect(other) {
+            None => {
+                if self.start <= other.start {
+                    vec![self.clone(), other.clone()]
+                } else {
+                    vec![other.clone(), self.clone()]
+                }
+            }
+            Some(intersection) => {
+                let mut refinement = Vec::new();
+                if a < intersection.start {
+                    refinement.push(ContiguousIntegerSet::new(a, intersection.start - E::one()));
+                }
+                if c < intersection.start {
+                    refinement.push(ContiguousIntegerSet::new(c, intersection.start - E::one()));
+                }
+                refinement.push(intersection);
+                if b > intersection.end {
+                    refinement.push(ContiguousIntegerSet::new(intersection.end + E::one(), b));
+                }
+                if d > intersection.end {
+                    refinement.push(ContiguousIntegerSet::new(intersection.end + E::one(), d));
+                }
+                refinement
+            }
         }
     }
 }
@@ -520,12 +569,13 @@ impl<E: Integer + Copy + ToPrimitive + Sum> Sample<'_, IntegerSetIter<E>, E, Ord
 #[cfg(test)]
 mod tests {
     use num::integer::Integer;
+    use num::ToPrimitive;
 
     use crate::interval::traits::*;
+    use crate::set::traits::Refineable;
     use crate::traits::{Collecting, ToIterator};
 
     use super::{ContiguousIntegerSet, OrderedIntegerSet};
-    use num::ToPrimitive;
 
     #[test]
     fn test_ordered_integer_set_iter() {
@@ -667,5 +717,29 @@ mod tests {
         test(&[[0usize, 5], [10, 15]], &[[0, 4]], &[[5, 5], [10, 15]]);
         test(&[[0usize, 5], [10, 15]], &[[0, 12]], &[[13, 15]]);
         test(&[[0usize, 10]], &[[0, 8]], &[[9, 10]]);
+    }
+
+    #[test]
+    fn test_get_common_refinement_contiguous_integer_set() {
+        fn test<E: Integer + Copy + ToPrimitive + std::fmt::Debug>(a: &[E; 2], b: &[E; 2], expected: &[[E; 2]]) {
+            let s1 = ContiguousIntegerSet::new(a[0], a[1]);
+            let s2 = ContiguousIntegerSet::new(b[0], b[1]);
+            let expected = expected.iter()
+                                   .map(|[a, b]| ContiguousIntegerSet::new(*a, *b))
+                                   .collect::<Vec<ContiguousIntegerSet<E>>>();
+            assert_eq!(s1.get_common_refinement(&s2), expected);
+            assert_eq!(s2.get_common_refinement(&s1), expected);
+        }
+        test(&[0usize, 3], &[4, 5], &[[0, 3], [4, 5]]);
+        test(&[0usize, 3], &[3, 5], &[[0, 2], [3, 3], [4, 5]]);
+        test(&[0usize, 4], &[2, 5], &[[0, 1], [2, 4], [5, 5]]);
+        test(&[0usize, 4], &[2, 10], &[[0, 1], [2, 4], [5, 10]]);
+        test(&[0usize, 4], &[0, 3], &[[0, 3], [4, 4]]);
+        test(&[0usize, 4], &[0, 8], &[[0, 4], [5, 8]]);
+        test(&[0usize, 6], &[2, 3], &[[0, 1], [2, 3], [4, 6]]);
+        test(&[0usize, 8], &[0, 8], &[[0, 8]]);
+        test(&[0i32, 8], &[0, 8], &[[0, 8]]);
+        test(&[-2i32, 4], &[0, 3], &[[-2, -1], [0, 3], [4, 4]]);
+        test(&[-2i32, 4], &[0, 3], &[[-2, -1], [0, 3], [4, 4]]);
     }
 }

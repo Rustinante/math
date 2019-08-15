@@ -45,3 +45,9 @@ impl<T: Finite> Countable for T {
         CountableType::Finite(T::size(self))
     }
 }
+
+/// Given two sets of the same type that are `Refineable`, the common refinement
+/// of the sets can be obtained
+pub trait Refineable<I> {
+    fn get_common_refinement(&self, other: &Self) -> Vec<I>;
+}
