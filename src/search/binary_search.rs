@@ -7,7 +7,10 @@ pub trait BinarySearch: Index<usize> {
     /// `start`: start index
     /// `end`: end index exclusive
     /// `cmp`: a function that returns `Ordering::Less` when the first argument is less than the second, etc.
-    /// returns the index of the target element as `Some(usize)` if present, `None` otherwise.
+    /// returns the index of the target element as `Some(usize)` if present, `Err` otherwise.
+    /// In the case of returning an `Err`, the associated value is `Some(usize)` representing the index
+    /// at which the target value can be inserted while maintaining the sorted order, or `None` if
+    /// the provided `[start, end)` range is empty, i.e. when `start >= end`.
     fn binary_search_with_cmp<E, F>(&self, start: usize, end: usize, target: &E, cmp: F) -> Result<usize, Option<usize>>
         where F: Fn(&<Self as Index<usize>>::Output, &E) -> Ordering;
 }

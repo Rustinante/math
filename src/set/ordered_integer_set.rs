@@ -36,6 +36,10 @@ impl<E: Integer + Copy> ContiguousIntegerSet<E> {
         (self.start, self.end)
     }
 
+    pub fn is_subset_of(&self, other: &ContiguousIntegerSet<E>) -> bool {
+        self.start >= other.start && self.end <= other.end
+    }
+
     #[inline]
     pub fn slice<'a, I: Slicing<&'a ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>>>(&'a self, slicer: I)
         -> Option<ContiguousIntegerSet<E>> {
