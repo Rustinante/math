@@ -8,8 +8,6 @@ use crate::search::binary_search::BinarySearch;
 use crate::set::ordered_integer_set::ContiguousIntegerSet;
 use crate::set::traits::{Refineable, Set};
 
-pub type IntervalPartitionRefinement<E> = Vec<ContiguousIntegerSet<E>>;
-
 pub struct OrderedIntervalPartitions<E: Integer + Copy> {
     partitions: Vec<ContiguousIntegerSet<E>>,
 }
@@ -68,7 +66,7 @@ impl<E: Integer + Copy + Hash> OrderedIntervalPartitions<E> {
     }
 }
 
-impl<E: Integer + Copy> Refineable<IntervalPartitionRefinement<E>> for OrderedIntervalPartitions<E> {
+impl<E: Integer + Copy> Refineable<OrderedIntervalPartitions<E>> for OrderedIntervalPartitions<E> {
     /// # Example
     /// ```
     /// use analytic::partition::ordered_interval_partitions::OrderedIntervalPartitions;
@@ -76,12 +74,12 @@ impl<E: Integer + Copy> Refineable<IntervalPartitionRefinement<E>> for OrderedIn
     /// use analytic::set::ordered_integer_set::ContiguousIntegerSet;
     /// let p1 = OrderedIntervalPartitions::from_slice(&[[-1, 4], [8, 10]]);
     /// let p2 = OrderedIntervalPartitions::from_slice(&[[3, 7]]);
-    /// assert_eq!(p1.get_common_refinement(&p2), [[-1, 2], [3, 4], [5, 7], [8, 10]]
+    /// assert_eq!(p1.get_common_refinement(&p2).into_vec(), [[-1, 2], [3, 4], [5, 7], [8, 10]]
     ///                                               .iter()
     ///                                               .map(|[a, b]| ContiguousIntegerSet::new(*a, *b))
     ///                                               .collect::<Vec<ContiguousIntegerSet<i32>>>());
     /// ```
-    fn get_common_refinement(&self, other: &OrderedIntervalPartitions<E>) -> IntervalPartitionRefinement<E> {
+    fn get_common_refinement(&self, other: &OrderedIntervalPartitions<E>) -> OrderedIntervalPartitions<E> {
         let mut i = 0;
         let mut j = 0;
         let end_i = self.num_partitions();
@@ -143,7 +141,7 @@ impl<E: Integer + Copy> Refineable<IntervalPartitionRefinement<E>> for OrderedIn
             refinement.push(other.partitions[j]);
             j += 1;
         }
-        refinement
+        OrderedIntervalPartitions::from_vec_with_trusted_order(refinement)
     }
 }
 
@@ -163,8 +161,8 @@ mod tests {
             let expected = expected.iter()
                                    .map(|[a, b]| ContiguousIntegerSet::new(*a, *b))
                                    .collect::<Vec<ContiguousIntegerSet<E>>>();
-            assert_eq!(s1.get_common_refinement(&s2), expected);
-            assert_eq!(s2.get_common_refinement(&s1), expected);
+            assert_eq!(s1.get_common_refinement(&s2).into_vec(), expected);
+            assert_eq!(s2.get_common_refinement(&s1).into_vec(), expected);
         }
         test::<usize>(&[], &[], &[]);
         test(&[[0usize, 4], [6, 10]], &[[1, 2], [4, 6]], &[[0, 0], [1, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 10]]);
