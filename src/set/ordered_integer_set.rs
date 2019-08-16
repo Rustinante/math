@@ -14,7 +14,7 @@ use crate::traits::{Collecting, Constructable, ToIterator};
 
 pub mod arithmetic;
 
-type IntegerSetRefinement<E> = Vec<ContiguousIntegerSet<E>>;
+pub type IntegerSetRefinement<E> = Vec<ContiguousIntegerSet<E>>;
 
 /// represents the set of integers in [start, end]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -400,9 +400,72 @@ impl<E: Integer + Copy + Sum + ToPrimitive> Finite for OrderedIntegerSet<E> {
     }
 }
 
-//impl<E: Integer + Copy + ToPrimitive> Refineable<IntegerSetRefinement<E>> for OrderedIntegerSet<E> {
-//    fn get_common_refinement(&self, other: OrderedIntegerSet<E>) -> IntegerSetRefinement<E> {}
-//}
+impl<E: Integer + Copy + ToPrimitive> Refineable<IntegerSetRefinement<E>> for OrderedIntegerSet<E> {
+    fn get_common_refinement(&self, other: &OrderedIntegerSet<E>) -> IntegerSetRefinement<E> {
+        let mut i = 0;
+        let mut j = 0;
+        let end_i = self.num_intervals();
+        let end_j = other.num_intervals();
+        let mut refinement = Vec::new();
+        let mut lhs_remnant = None;
+        let mut rhs_remnant = None;
+        while i < end_i && j < end_j {
+            let lhs = lhs_remnant.unwrap_or(self.intervals[i]);
+            let rhs = rhs_remnant.unwrap_or(other.intervals[j]);
+            match lhs.intersect(&rhs) {
+                None => {
+                    if lhs.start <= rhs.start {
+                        refinement.push(lhs);
+                        i += 1;
+                        lhs_remnant = None;
+                    } else {
+                        refinement.push(rhs);
+                        j += 1;
+                        rhs_remnant = None;
+                    }
+                }
+                Some(intersection) => {
+                    if lhs.start < intersection.start {
+                        refinement.push(ContiguousIntegerSet::new(lhs.start, intersection.start - E::one()));
+                    }
+                    if rhs.start < intersection.start {
+                        refinement.push(ContiguousIntegerSet::new(rhs.start, intersection.start - E::one()));
+                    }
+                    refinement.push(intersection);
+                    if lhs.end > intersection.end {
+                        lhs_remnant = Some(ContiguousIntegerSet::new(intersection.end + E::one(), lhs.end));
+                    } else {
+                        lhs_remnant = None;
+                        i += 1;
+                    }
+                    if rhs.end > intersection.end {
+                        rhs_remnant = Some(ContiguousIntegerSet::new(intersection.end + E::one(), rhs.end));
+                    } else {
+                        rhs_remnant = None;
+                        j += 1;
+                    }
+                }
+            }
+        }
+        if let Some(r) = lhs_remnant {
+            refinement.push(r);
+            i += 1;
+        }
+        if let Some(r) = rhs_remnant {
+            refinement.push(r);
+            j += 1;
+        }
+        while i < end_i {
+            refinement.push(self.intervals[i]);
+            i += 1;
+        }
+        while j < end_j {
+            refinement.push(other.intervals[j]);
+            j += 1;
+        }
+        refinement
+    }
+}
 
 impl<E: Integer + Copy + ToPrimitive> From<Vec<ContiguousIntegerSet<E>>> for OrderedIntegerSet<E> {
     fn from(intervals: Vec<ContiguousIntegerSet<E>>) -> OrderedIntegerSet<E> {
@@ -747,5 +810,27 @@ mod tests {
         test(&[0i32, 8], &[0, 8], &[[0, 8]]);
         test(&[-2i32, 4], &[0, 3], &[[-2, -1], [0, 3], [4, 4]]);
         test(&[-2i32, 4], &[0, 3], &[[-2, -1], [0, 3], [4, 4]]);
+    }
+
+    #[test]
+    fn test_get_common_refinement_orderd_integer_set() {
+        fn test<E: Integer + Copy + ToPrimitive + std::fmt::Debug>(a: &[[E; 2]], b: &[[E; 2]], expected: &[[E; 2]]) {
+            let s1 = OrderedIntegerSet::from_slice(a);
+            let s2 = OrderedIntegerSet::from_slice(b);
+            let expected = expected.iter()
+                                   .map(|[a, b]| ContiguousIntegerSet::new(*a, *b))
+                                   .collect::<Vec<ContiguousIntegerSet<E>>>();
+            assert_eq!(s1.get_common_refinement(&s2), expected);
+            assert_eq!(s2.get_common_refinement(&s1), expected);
+        }
+        test::<usize>(&[], &[], &[]);
+        test(&[[0usize, 4], [6, 10]], &[[1, 2], [4, 6]], &[[0, 0], [1, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 10]]);
+        test(&[[0usize, 5], [8, 10]], &[[6, 7], [11, 13]], &[[0, 5], [6, 7], [8, 10], [11, 13]]);
+        test(&[[-1, 5]], &[[-2, 0]], &[[-2, -2], [-1, 0], [1, 5]]);
+        test(&[[0usize, 10], [15, 23]], &[[3, 5], [20, 23]], &[[0, 2], [3, 5], [6, 10], [15, 19], [20, 23]]);
+        test(&[[0usize, 10], [15, 23]], &[[3, 5], [15, 23]], &[[0, 2], [3, 5], [6, 10], [15, 23]]);
+        test(&[[0usize, 10], [15, 23]], &[[3, 5], [15, 20]], &[[0, 2], [3, 5], [6, 10], [15, 20], [21, 23]]);
+        test(&[[1, 100]], &[[3, 5], [23, 30]], &[[1, 2], [3, 5], [6, 22], [23, 30], [31, 100]]);
+        test(&[[2usize, 6], [8, 12]], &[[0, 3], [5, 13]], &[[0, 1], [2, 3], [4, 4], [5, 6], [7, 7], [8, 12], [13, 13]]);
     }
 }

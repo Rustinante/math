@@ -46,8 +46,7 @@ impl<T: Finite> Countable for T {
     }
 }
 
-/// Given two sets of the same type that are `Refineable`, the common refinement
-/// of the sets can be obtained
+/// Given two sets of the same type that are `Refineable`, their common refinement can be obtained
 pub trait Refineable<O> {
     fn get_common_refinement(&self, other: &Self) -> O;
 }
