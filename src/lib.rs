@@ -3,6 +3,7 @@
 
 #![feature(drain_filter)]
 
+pub mod histogram;
 pub mod interval;
 pub mod partition;
 pub mod sample;
