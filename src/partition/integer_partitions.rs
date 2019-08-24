@@ -171,21 +171,26 @@ impl IntoIterator for IntegerPartitionIterProducer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::set::traits::Finite;
+
+    use super::*;
 
     #[test]
     fn test_integer_partition_par_iter() {
         let partitions = IntegerPartitions::new(vec![
             OrderedIntegerSet::from_slice(&[[1, 3], [6, 9]]),
-            OrderedIntegerSet::from_slice(&[[4, 5], [10, 14]])
+            OrderedIntegerSet::from_slice(&[[4, 5], [10, 14]]),
+            OrderedIntegerSet::from_slice(&[[15, 20], [25, 26]]),
+            OrderedIntegerSet::from_slice(&[[21, 24]]),
         ]);
         let mut iter = partitions.iter();
         assert_eq!(iter.next(), Some(OrderedIntegerSet::from_slice(&[[1, 3], [6, 9]])));
         assert_eq!(iter.next(), Some(OrderedIntegerSet::from_slice(&[[4, 5], [10, 14]])));
+        assert_eq!(iter.next(), Some(OrderedIntegerSet::from_slice(&[[15, 20], [25, 26]])));
+        assert_eq!(iter.next(), Some(OrderedIntegerSet::from_slice(&[[21, 24]])));
         assert_eq!(iter.next(), None);
 
         let num_elements: usize = partitions.iter().into_par_iter().map(|p| p.size()).sum();
-        assert_eq!(num_elements, 14);
+        assert_eq!(num_elements, 26);
     }
 }
