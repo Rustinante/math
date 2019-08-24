@@ -19,6 +19,7 @@ impl IntegerPartitions {
         }
     }
 
+    #[inline]
     pub fn num_partitions(&self) -> usize {
         self.partitions.len()
     }
@@ -39,6 +40,8 @@ impl IntegerPartitions {
 
 impl Index<usize> for IntegerPartitions {
     type Output = Partition;
+
+    #[inline]
     fn index(&self, index: usize) -> &Self::Output {
         &self.partitions[index]
     }
@@ -73,6 +76,7 @@ impl Iterator for IntegerPartitionIter {
 }
 
 impl ExactSizeIterator for IntegerPartitionIter {
+    #[inline]
     fn len(&self) -> usize {
         self.end_exclusive - self.current_cursor
     }
