@@ -9,4 +9,5 @@ pub mod partition;
 pub mod sample;
 pub mod search;
 pub mod set;
+pub mod stats;
 pub mod traits;
