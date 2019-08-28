@@ -5,11 +5,13 @@ use std::ops::Deref;
 use num::traits::{NumAssign, NumOps};
 use num::traits::cast::{FromPrimitive, ToPrimitive};
 
+use crate::traits::Collecting;
 
 pub struct Histogram<T> where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
-    num_intervals: usize,
     boundaries: Vec<T>,
     counters: Vec<usize>,
+    num_less_than_min: usize,
+    num_larger_than_max: usize,
 }
 
 impl<T> Histogram<T> where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
@@ -24,8 +26,10 @@ impl<T> Histogram<T> where T: PartialOrd + NumAssign + NumOps + FromPrimitive + 
         };
         let delta = (max - min) / n;
         if delta <= T::zero() {
-            return Err(format!("cannot create positive interval legnths for the given min({}) max({}) and num_intervals({})",
-                               min, max, num_intervals));
+            return Err(format!(
+                "cannot create positive interval legnths for the given min({}) max({}) and num_intervals({})",
+                min, max, num_intervals
+            ));
         }
 
         let mut boundaries = vec![min];
@@ -36,22 +40,32 @@ impl<T> Histogram<T> where T: PartialOrd + NumAssign + NumOps + FromPrimitive + 
         }
         boundaries.push(max);
 
+        let mut num_larger_than_max = 0;
+        let mut num_less_than_min = 0;
         let mut counters = vec![0usize; num_intervals];
         for a in elements.iter() {
-            if *a < min || *a > max {
-                return Err(format!("{} out of range [{}, {}]", a, min, max));
+            if *a < min {
+                num_less_than_min += 1;
+            } else if *a > max {
+                num_larger_than_max += 1;
+            } else {
+                let i = match ((*a - min) / delta).to_usize() {
+                    Some(i) => i,
+                    None => return Err(format!("failed to convert {} to an usize index", (*a - min) / delta))
+                };
+                counters[cmp::min(i, num_intervals - 1)] += 1;
             }
-            let i = match ((*a - min) / delta).to_usize() {
-                Some(i) => i,
-                None => return Err(format!("failed to convert {} to an usize index", (*a - min) / delta))
-            };
-            counters[cmp::min(i, num_intervals - 1)] += 1;
         }
-        Ok(Histogram { num_intervals, boundaries, counters })
+        Ok(Histogram { boundaries, counters, num_less_than_min, num_larger_than_max })
+    }
+
+    #[inline]
+    pub fn num_intervals(&self) -> usize {
+        self.boundaries.len() - 1
     }
 
     pub fn get_ratios(&self) -> Vec<f64> {
-        let mut ratio_distribution = vec![0f64; self.num_intervals];
+        let mut ratio_distribution = vec![0f64; self.num_intervals()];
         let total = self.counters.iter().sum::<usize>() as f64;
         for (i, ratio) in ratio_distribution.iter_mut().enumerate() {
             *ratio = self.counters[i] as f64 / total;
@@ -72,12 +86,41 @@ impl<T> Histogram<T> where T: PartialOrd + NumAssign + NumOps + FromPrimitive + 
         Histogram::new(elements, num_intervals, *min, *max)
     }
 
+    #[inline]
     pub fn get_boundaries(&self) -> &Vec<T> {
         &self.boundaries
     }
 
+    #[inline]
     pub fn get_counters(&self) -> &Vec<usize> {
         &self.counters
+    }
+
+    #[inline]
+    pub fn min_boundary(&self) -> T {
+        *self.boundaries.first().unwrap()
+    }
+
+    #[inline]
+    pub fn max_boundary(&self) -> T {
+        *self.boundaries.last().unwrap()
+    }
+}
+
+impl<T> Collecting<T> for Histogram<T>
+    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+    fn collect(&mut self, item: T) {
+        let delta = self.boundaries[1] - self.boundaries[0];
+        let num_intervals = self.num_intervals();
+        let min_boundary = self.min_boundary();
+        if item < min_boundary {
+            self.num_less_than_min += 1;
+        } else if item > self.max_boundary() {
+            self.num_larger_than_max += 1;
+        } else {
+            let i = ((item - min_boundary) / delta).to_usize().unwrap();
+            self.counters[cmp::min(i, num_intervals - 1)] += 1;
+        }
     }
 }
 
@@ -88,21 +131,49 @@ impl<T> fmt::Display for Histogram<T>
         let mut cum = 0usize;
         let mut ratio_cum = 0f64;
         let mut reverse_ratio_cum = 1f64;
-        let last_i = self.num_intervals - 1;
+        let last_i = self.num_intervals() - 1;
         writeln!(f, "{:>11.2}  {:>12.2} {:>16} {:>16} {:>16} {:>16} {:>16}",
                  "", "", "count", "cum_count", "ratio", "cum_ratio", "rev_cum_ratio")?;
         for i in 0..last_i {
             cum += self.counters[i];
             ratio_cum += ratios[i];
-            writeln!(f, "[{:>10.2}, {:>10.2}): {:>16.2} {:>16.2} {:>16.4} {:>16.4} {:>16.4}",
-                     self.boundaries[i], self.boundaries[i + 1], self.counters[i], cum, ratios[i], ratio_cum, reverse_ratio_cum)?;
+            writeln!(f,
+                     "[{:>10.2}, {:>10.2}): {:>16.2} {:>16.2} {:>16.4} {:>16.4} {:>16.4}",
+                     self.boundaries[i],
+                     self.boundaries[i + 1],
+                     self.counters[i],
+                     cum,
+                     ratios[i],
+                     ratio_cum,
+                     reverse_ratio_cum
+            )?;
             reverse_ratio_cum -= ratios[i];
         }
         cum += self.counters[last_i];
         ratio_cum += ratios[last_i];
-        writeln!(f, "[{:>10.2}, {:>10.2}]: {:>16.2} {:>16.2} {:>16.4} {:>16.4} {:>16.4}",
-                 self.boundaries[last_i], self.boundaries[self.num_intervals],
-                 self.counters[last_i], cum, ratios[last_i], ratio_cum, reverse_ratio_cum)?;
+        writeln!(
+            f,
+            "[{:>10.2}, {:>10.2}]: {:>16.2} {:>16.2} {:>16.4} {:>16.4} {:>16.4}",
+            self.boundaries[last_i],
+            self.boundaries[self.num_intervals()],
+            self.counters[last_i],
+            cum,
+            ratios[last_i],
+            ratio_cum,
+            reverse_ratio_cum
+        )?;
+        writeln!(
+            f,
+            "\n\
+            ({:>10}, {:>10.2}) count: {}\n\
+            ({:>10.2}, {:>10}) count: {}",
+            "-inf",
+            self.min_boundary(),
+            self.num_less_than_min,
+            self.max_boundary(),
+            "inf",
+            self.num_larger_than_max,
+        )?;
         Ok(())
     }
 }
@@ -110,12 +181,13 @@ impl<T> fmt::Display for Histogram<T>
 #[cfg(test)]
 mod tests {
     use super::Histogram;
+    use crate::traits::Collecting;
 
     #[test]
     fn test_histogram() {
-        let elements = vec![0., 3.5];
+        let elements = vec![4., 0., 3.5];
         let num_intervals = 2;
-        let histogram = match Histogram::new(&elements, num_intervals, 0., 7.) {
+        let mut histogram = match Histogram::new(&elements, num_intervals, 0., 7.) {
             Ok(h) => h,
             Err(why) => {
                 eprintln!("{}", why);
@@ -123,11 +195,14 @@ mod tests {
                 return;
             }
         };
+        histogram.collect(4.);
         println!("boundaries: {:.2?}", histogram.boundaries);
         println!("elements: {:.2?}", elements);
         println!("counters: {:?}", histogram.counters);
         println!("{}", histogram);
         assert_eq!(num_intervals + 1, histogram.boundaries.len());
         assert_eq!(num_intervals, histogram.counters.len());
+        assert_eq!(histogram.counters[0], 1);
+        assert_eq!(histogram.counters[1], 3);
     }
 }
