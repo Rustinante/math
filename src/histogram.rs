@@ -5,7 +5,7 @@ use std::ops::Deref;
 use num::traits::{NumAssign, NumOps};
 use num::traits::cast::{FromPrimitive, ToPrimitive};
 
-use crate::traits::Collecting;
+use crate::traits::{Collecting, ToIterator};
 
 pub struct Histogram<T> where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
     boundaries: Vec<T>,
@@ -178,10 +178,57 @@ impl<T> fmt::Display for Histogram<T>
     }
 }
 
+pub type HistogramEntry<T> = (T, T, usize);
+
+impl<'a, T> ToIterator<'a, HistogramIter<'a, T>, HistogramEntry<T>> for Histogram<T>
+    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+    fn to_iter(&'a self) -> HistogramIter<'a, T> {
+        HistogramIter {
+            histogram: &self,
+            cursor: 0,
+        }
+    }
+}
+
+pub struct HistogramIter<'a, T>
+    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+    histogram: &'a Histogram<T>,
+    cursor: usize,
+}
+
+/// An iterator that iterates through the entries of the histogram
+/// ```
+/// use analytic::histogram::Histogram;
+/// use analytic::traits::ToIterator;
+/// let histogram = Histogram::new(&vec![4., 0., 3.5], 2, 0., 7.).unwrap();
+/// let mut iter = histogram.to_iter();
+/// assert_eq!(Some((0., 3.5, 1)), iter.next());
+/// assert_eq!(Some((3.5, 7., 2)), iter.next());
+/// assert_eq!(None, iter.next());
+/// ```
+impl<'a, T> Iterator for HistogramIter<'a, T>
+    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+    type Item = HistogramEntry<T>;
+    fn next(&mut self) -> Option<Self::Item> {
+        let i = self.cursor;
+        if i >= self.histogram.num_intervals() {
+            None
+        } else {
+            self.cursor += 1;
+            Some((
+                self.histogram.boundaries[i],
+                self.histogram.boundaries[i + 1],
+                self.histogram.counters[i],
+            ))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::traits::{Collecting, ToIterator};
+
     use super::Histogram;
-    use crate::traits::Collecting;
 
     #[test]
     fn test_histogram() {
@@ -196,10 +243,10 @@ mod tests {
             }
         };
         histogram.collect(4.);
-        println!("boundaries: {:.2?}", histogram.boundaries);
-        println!("elements: {:.2?}", elements);
-        println!("counters: {:?}", histogram.counters);
-        println!("{}", histogram);
+        let mut iter = histogram.to_iter();
+        assert_eq!(Some((0., 3.5, 1)), iter.next());
+        assert_eq!(Some((3.5, 7., 3)), iter.next());
+        assert_eq!(None, iter.next());
         assert_eq!(num_intervals + 1, histogram.boundaries.len());
         assert_eq!(num_intervals, histogram.counters.len());
         assert_eq!(histogram.counters[0], 1);
