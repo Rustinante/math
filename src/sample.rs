@@ -28,6 +28,24 @@ pub trait Sample<'a, I: Iterator<Item=E>, E, O: Collecting<E> + Constructable>: 
         }
         Ok(samples)
     }
+
+    fn sample_with_replacement<'s: 'a>(&'s self, size: usize) -> Result<O, String> {
+        let population_size = self.size();
+        if population_size == 0 {
+            return Err("cannot sample from a population of 0 elements".to_string());
+        }
+        let mut samples = O::new();
+        let mut rng = rand::thread_rng();
+        let uniform = Uniform::new(0., population_size as f64);
+        for _ in 0..size {
+            samples.collect(
+                self.to_iter()
+                    .nth(uniform.sample(&mut rng) as usize)
+                    .unwrap()
+            );
+        }
+        Ok(samples)
+    }
 }
 
 #[cfg(test)]
@@ -38,7 +56,7 @@ mod tests {
     use super::Sample;
 
     #[test]
-    fn test_sample() {
+    fn test_sampling_without_replacement() {
         let interval = ContiguousIntegerSet::new(0, 100);
         let num_samples = 25;
         let samples = interval.sample_subset_without_replacement(num_samples).unwrap();
@@ -48,5 +66,14 @@ mod tests {
         let num_samples = 18;
         let samples = set.sample_subset_without_replacement(num_samples).unwrap();
         assert_eq!(samples.size(), num_samples);
+    }
+
+    #[test]
+    fn test_sampling_with_replacement() {
+        let num_samples = 25;
+        let v = vec![1];
+        let samples = v.sample_with_replacement(num_samples);
+        assert_eq!(samples, Ok(vec![1; num_samples]));
+        assert!(Vec::<f32>::new().sample_with_replacement(num_samples).is_err());
     }
 }
