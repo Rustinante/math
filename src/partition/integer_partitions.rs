@@ -33,7 +33,11 @@ impl IntegerPartitions {
     }
 
     pub fn union(&self) -> Partition {
-        let intervals: Vec<ContiguousIntegerSet<usize>> = self.partitions.iter().flat_map(|p| p.get_intervals_by_ref().clone()).collect();
+        let intervals: Vec<ContiguousIntegerSet<usize>> =
+            self.partitions
+                .iter()
+                .flat_map(|p| p.get_intervals_by_ref().clone())
+                .collect();
         OrderedIntegerSet::from_contiguous_integer_sets(intervals)
     }
 }

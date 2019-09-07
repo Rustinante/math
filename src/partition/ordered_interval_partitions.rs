@@ -49,7 +49,10 @@ impl<E: Integer + Copy> OrderedIntervalPartitions<E> {
 
 impl<E: Integer + Copy + Hash> OrderedIntervalPartitions<E> {
     /// if there is a partition containing the subinterval, returns a tuple `(partition_index, partition)`
-    pub fn get_partition_containing(&self, subinterval: &ContiguousIntegerSet<E>) -> Option<(usize, ContiguousIntegerSet<E>)> {
+    pub fn get_partition_containing(
+        &self,
+        subinterval: &ContiguousIntegerSet<E>,
+    ) -> Option<(usize, ContiguousIntegerSet<E>)> {
         match self.partitions.binary_search_with_cmp(
             0, self.partitions.len(), subinterval, |interval, subinterval| {
                 if subinterval.is_subset_of(interval) {
@@ -104,20 +107,28 @@ impl<E: Integer + Copy> Refineable<OrderedIntervalPartitions<E>> for OrderedInte
                 }
                 Some(intersection) => {
                     if lhs.get_start() < intersection.get_start() {
-                        refinement.push(ContiguousIntegerSet::new(lhs.get_start(), intersection.get_start() - E::one()));
+                        refinement.push(
+                            ContiguousIntegerSet::new(lhs.get_start(), intersection.get_start() - E::one())
+                        );
                     }
                     if rhs.get_start() < intersection.get_start() {
-                        refinement.push(ContiguousIntegerSet::new(rhs.get_start(), intersection.get_start() - E::one()));
+                        refinement.push(
+                            ContiguousIntegerSet::new(rhs.get_start(), intersection.get_start() - E::one())
+                        );
                     }
                     refinement.push(intersection);
                     if lhs.get_end() > intersection.get_end() {
-                        lhs_remnant = Some(ContiguousIntegerSet::new(intersection.get_end() + E::one(), lhs.get_end()));
+                        lhs_remnant = Some(
+                            ContiguousIntegerSet::new(intersection.get_end() + E::one(), lhs.get_end())
+                        );
                     } else {
                         lhs_remnant = None;
                         i += 1;
                     }
                     if rhs.get_end() > intersection.get_end() {
-                        rhs_remnant = Some(ContiguousIntegerSet::new(intersection.get_end() + E::one(), rhs.get_end()));
+                        rhs_remnant = Some(
+                            ContiguousIntegerSet::new(intersection.get_end() + E::one(), rhs.get_end())
+                        );
                     } else {
                         rhs_remnant = None;
                         j += 1;

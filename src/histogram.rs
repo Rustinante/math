@@ -7,27 +7,37 @@ use num::traits::cast::{FromPrimitive, ToPrimitive};
 
 use crate::traits::{Collecting, ToIterator};
 
-pub struct Histogram<T> where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+pub struct Histogram<T>
+    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
     boundaries: Vec<T>,
     counters: Vec<usize>,
     num_less_than_min: usize,
     num_larger_than_max: usize,
 }
 
-impl<T> Histogram<T> where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
-    pub fn new<'a>(elements: &'a Vec<T>, num_intervals: usize, min: T, max: T) -> Result<Histogram<T>, String>
+impl<T> Histogram<T>
+    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+    pub fn new<'a>(
+        elements: &'a Vec<T>,
+        num_intervals: usize,
+        min: T,
+        max: T,
+    ) -> Result<Histogram<T>, String>
         where &'a T: Deref {
         if num_intervals == 0 {
             return Err(format!("num_intervals should be positive, received {}", num_intervals));
         }
         let n = match T::from_usize(num_intervals) {
             Some(n) => n,
-            None => return Err(format!("failed to convert num_intervals: usize ({}) to type T", num_intervals))
+            None => return Err(
+                format!("failed to convert num_intervals: usize ({}) to type T", num_intervals)
+            )
         };
         let delta = (max - min) / n;
         if delta <= T::zero() {
             return Err(format!(
-                "cannot create positive interval legnths for the given min({}) max({}) and num_intervals({})",
+                "cannot create positive interval legnths for the given \
+                min({}) max({}) and num_intervals({})",
                 min, max, num_intervals
             ));
         }
@@ -51,7 +61,9 @@ impl<T> Histogram<T> where T: PartialOrd + NumAssign + NumOps + FromPrimitive + 
             } else {
                 let i = match ((*a - min) / delta).to_usize() {
                     Some(i) => i,
-                    None => return Err(format!("failed to convert {} to an usize index", (*a - min) / delta))
+                    None => return Err(
+                        format!("failed to convert {} to an usize index", (*a - min) / delta)
+                    )
                 };
                 counters[cmp::min(i, num_intervals - 1)] += 1;
             }
@@ -73,14 +85,21 @@ impl<T> Histogram<T> where T: PartialOrd + NumAssign + NumOps + FromPrimitive + 
         ratio_distribution
     }
 
-    pub fn new_with_auto_range<'a>(elements: &'a Vec<T>, num_intervals: usize) -> Result<Histogram<T>, String>
+    pub fn new_with_auto_range<'a>(
+        elements: &'a Vec<T>,
+        num_intervals: usize,
+    ) -> Result<Histogram<T>, String>
         where &'a T: Deref, T: Ord {
         let min = match elements.iter().min() {
-            None => return Err(format!("failed to extract the min elements when range is set to auto")),
+            None => return Err(
+                format!("failed to extract the min elements when range is set to auto")
+            ),
             Some(min) => min
         };
         let max = match elements.iter().max() {
-            None => return Err(format!("failed to extract the max elements when range is set to auto")),
+            None => return Err(
+                format!("failed to extract the max elements when range is set to auto")
+            ),
             Some(max) => max
         };
         Histogram::new(elements, num_intervals, *min, *max)

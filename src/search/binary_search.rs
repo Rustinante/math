@@ -11,12 +11,24 @@ pub trait BinarySearch: Index<usize> {
     /// In the case of returning an `Err`, the associated value is `Some(usize)` representing the index
     /// at which the target value can be inserted while maintaining the sorted order, or `None` if
     /// the provided `[start, end)` range is empty, i.e. when `start >= end`.
-    fn binary_search_with_cmp<E, F>(&self, start: usize, end: usize, target: &E, cmp: F) -> Result<usize, Option<usize>>
+    fn binary_search_with_cmp<E, F>(
+        &self,
+        start: usize,
+        end: usize,
+        target: &E,
+        cmp: F,
+    ) -> Result<usize, Option<usize>>
         where F: Fn(&<Self as Index<usize>>::Output, &E) -> Ordering;
 }
 
 impl<T> BinarySearch for Vec<T> {
-    fn binary_search_with_cmp<E, F>(&self, start: usize, end: usize, target: &E, cmp: F) -> Result<usize, Option<usize>>
+    fn binary_search_with_cmp<E, F>(
+        &self,
+        start: usize,
+        end: usize,
+        target: &E,
+        cmp: F,
+    ) -> Result<usize, Option<usize>>
         where F: Fn(&<Self as Index<usize>>::Output, &E) -> Ordering {
         if start >= end {
             return Err(None);
