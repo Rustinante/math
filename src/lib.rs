@@ -5,6 +5,7 @@
 
 pub mod histogram;
 pub mod interval;
+pub mod iter;
 pub mod partition;
 pub mod sample;
 pub mod search;
