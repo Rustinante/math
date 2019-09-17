@@ -7,6 +7,7 @@ use crate::interval::traits::Interval;
 use crate::search::binary_search::BinarySearch;
 use crate::set::ordered_integer_set::ContiguousIntegerSet;
 use crate::set::traits::{Refineable, Set};
+use crate::traits::SubsetIndexable;
 
 pub struct OrderedIntervalPartitions<E: Integer + Copy> {
     partitions: Vec<ContiguousIntegerSet<E>>,
@@ -44,6 +45,16 @@ impl<E: Integer + Copy> OrderedIntervalPartitions<E> {
     #[inline]
     pub fn into_vec(self) -> Vec<ContiguousIntegerSet<E>> {
         self.partitions
+    }
+}
+
+impl<E: Integer + Copy + Hash> SubsetIndexable<ContiguousIntegerSet<E>> for OrderedIntervalPartitions<E> {
+    #[inline]
+    fn get_set_containing(&self, subset: &ContiguousIntegerSet<E>) -> Option<ContiguousIntegerSet<E>> {
+        match self.get_partition_containing(subset) {
+            None => None,
+            Some(s) => Some(s.1)
+        }
     }
 }
 
