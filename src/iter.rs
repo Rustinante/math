@@ -93,7 +93,7 @@ impl<'a, K, V> IntoUnionZip<'a, K, HashMap<K, V>> for UnionZipped<'a, K, HashMap
 
         keys.sort();
 
-        let mut maps = self.maps.clone();
+        let mut maps = self.maps;
         maps.push(other);
         UnionZipped {
             keys,
@@ -138,28 +138,33 @@ impl<'a, K, V> Iterator for UnionZippedIter<'a, K, HashMap<K, V>, IntoIter<K>>
     }
 }
 
-pub trait CommonRefinementZip<S, K, M> {
-    fn common_refinement_zip<'a, F>(&'a self, other: &'a Self, sort_fn: F)
-        -> CommonRefinementZipped<'a, S, K, M>
-        where S: SubsetIndexable<K>, F: FnMut(&K, &K) -> Ordering;
+/// `P` is the partition type
+/// `R` is the common refinement type
+/// `M` is the map type that maps partitions of type `P` to values
+pub trait CommonRefinementZip<P, R, M> {
+    fn common_refinement_zip<'a, F>(&'a self, other: &'a M, sort_fn: F)
+        -> CommonRefinementZipped<'a, P, R, M>
+        where P: SubsetIndexable<R>, F: FnMut(&R, &R) -> Ordering;
 }
 
-pub struct CommonRefinementZipped<'a, S, K, M>
-    where S: SubsetIndexable<K> {
-    refined_keys: Vec<K>,
-    left_keys: S,
-    right_keys: S,
-    left: &'a M,
-    right: &'a M,
+pub trait IntoCommonRefinementZip<'a, P, R, M> {
+    fn into_common_refinement_zip<F>(self, other: &'a M, sort_fn: F)
+        -> CommonRefinementZipped<'a, P, R, M>
+        where P: SubsetIndexable<R>, F: FnMut(&R, &R) -> Ordering;
 }
 
-pub struct CommonRefinementZipIter<'a, S, K, M, I: Iterator<Item=K>>
-    where S: SubsetIndexable<K> {
+pub struct CommonRefinementZipped<'a, P, R, M>
+    where P: SubsetIndexable<R> {
+    refined_keys: Vec<R>,
+    keys_list: Vec<P>,
+    maps: Vec<&'a M>,
+}
+
+pub struct CommonRefinementZipIter<'a, P, R, M, I: Iterator<Item=R>>
+    where P: SubsetIndexable<R> {
     refined_keys_iter: I,
-    left_keys: S,
-    right_keys: S,
-    left: &'a M,
-    right: &'a M,
+    partitions_list: Vec<P>,
+    maps: Vec<&'a M>,
 }
 
 pub type UsizeInterval = ContiguousIntegerSet<usize>;
@@ -187,14 +192,15 @@ impl<V> CommonRefinementZip<
     /// let mut iter = m1
     ///     .common_refinement_zip(&m2, |a, b| a.get_start().cmp(&b.get_start()))
     ///     .into_iter();
-    /// assert_eq!(Some((UsizeInterval::new(0usize, 1), (Some(&5), None))), iter.next());
-    /// assert_eq!(Some((UsizeInterval::new(2usize, 4), (Some(&5), Some(&8)))), iter.next());
-    /// assert_eq!(Some((UsizeInterval::new(5usize, 5), (Some(&5), None))), iter.next());
-    /// assert_eq!(Some((UsizeInterval::new(8usize, 10), (Some(&2), None))), iter.next());
-    /// assert_eq!(Some((UsizeInterval::new(12usize, 13), (None, Some(&9)))), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(0usize, 1), vec![Some(&5), None])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(2usize, 4), vec![Some(&5), Some(&8)])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(5usize, 5), vec![Some(&5), None])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(8usize, 10), vec![Some(&2), None])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(12usize, 13), vec![None, Some(&9)])), iter.next());
+    /// assert_eq!(None, iter.next());
     /// ```
     fn common_refinement_zip<'a, F>(&'a self, other: &'a Self, mut sort_fn: F)
-        -> CommonRefinementZipped<'a, OrderedIntervalPartitions<usize>, UsizeInterval, HashMap<UsizeInterval, V>>
+        -> CommonRefinementZipped<'a, OrderedIntervalPartitions<usize>, UsizeInterval, Self>
         where F: FnMut(&UsizeInterval, &UsizeInterval) -> Ordering {
         let mut keys_1: Vec<UsizeInterval> = self.keys().map(|i| *i).collect();
         keys_1.sort_by(|a, b| sort_fn(a, b));
@@ -202,19 +208,90 @@ impl<V> CommonRefinementZip<
         let mut keys_2: Vec<UsizeInterval> = other.keys().map(|i| *i).collect();
         keys_2.sort_by(|a, b| sort_fn(a, b));
 
-        let left_keys = OrderedIntervalPartitions::from_vec_with_trusted_order(keys_1.clone());
-        let right_keys = OrderedIntervalPartitions::from_vec_with_trusted_order(keys_2.clone());
+        let p1 = OrderedIntervalPartitions::from_vec_with_trusted_order(keys_1.clone());
+        let p2 = OrderedIntervalPartitions::from_vec_with_trusted_order(keys_2.clone());
 
-        let refined_keys = left_keys
-            .get_common_refinement(&right_keys)
+        let refined_keys = p1
+            .get_common_refinement(&p2)
             .into_vec();
 
         CommonRefinementZipped {
             refined_keys,
-            left_keys,
-            right_keys,
-            left: &self,
-            right: other,
+            keys_list: vec![p1, p2],
+            maps: vec![&self, other],
+        }
+    }
+}
+
+impl<'a, V> IntoCommonRefinementZip<
+    'a,
+    OrderedIntervalPartitions<usize>,
+    UsizeInterval,
+    HashMap<UsizeInterval, V>
+> for CommonRefinementZipped<
+    'a,
+    OrderedIntervalPartitions<usize>,
+    UsizeInterval,
+    HashMap<UsizeInterval, V>
+> {
+    /// ```
+    /// use std::collections::HashMap;
+    /// use analytic::interval::traits::Interval;
+    /// use analytic::iter::{CommonRefinementZip, IntoCommonRefinementZip, UsizeInterval};
+    ///
+    /// let m1: HashMap<UsizeInterval, i32> = vec![
+    ///     (UsizeInterval::new(0usize, 10), 5),
+    ///     (UsizeInterval::new(16usize, 17), 21),
+    /// ].into_iter().collect();
+    ///
+    /// let m2: HashMap<UsizeInterval, i32> = vec![
+    ///     (UsizeInterval::new(2usize, 3), 8),
+    ///     (UsizeInterval::new(12, 20), 9),
+    /// ].into_iter().collect();
+    ///
+    /// let m3: HashMap<UsizeInterval, i32> = vec![
+    ///     (UsizeInterval::new(2usize, 4), 7),
+    ///     (UsizeInterval::new(9usize, 10), -1),
+    ///     (UsizeInterval::new(15, 20), 0),
+    /// ].into_iter().collect();
+    ///
+    /// let mut iter = m1
+    ///     .common_refinement_zip(&m2, |a, b| a.get_start().cmp(&b.get_start()))
+    ///     .into_common_refinement_zip(&m3, |a, b| a.get_start().cmp(&b.get_start()))
+    ///     .into_iter();
+    ///
+    /// assert_eq!(Some((UsizeInterval::new(0usize, 1), vec![Some(&5), None, None])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(2usize, 3), vec![Some(&5), Some(&8), Some(&7)])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(4usize, 4), vec![Some(&5), None, Some(&7)])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(5usize, 8), vec![Some(&5), None, None])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(9usize, 10), vec![Some(&5), None, Some(&-1)])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(12usize, 14), vec![None, Some(&9), None])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(15usize, 15), vec![None, Some(&9), Some(&0)])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(16usize, 17), vec![Some(&21), Some(&9), Some(&0)])), iter.next());
+    /// assert_eq!(Some((UsizeInterval::new(18usize, 20), vec![None, Some(&9), Some(&0)])), iter.next());
+    /// assert_eq!(None, iter.next());
+    /// ```
+    fn into_common_refinement_zip<F>(self, other: &'a HashMap<UsizeInterval, V>, mut sort_fn: F)
+        -> CommonRefinementZipped<'a, OrderedIntervalPartitions<usize>, UsizeInterval, HashMap<UsizeInterval, V>>
+        where F: FnMut(&UsizeInterval, &UsizeInterval) -> Ordering {
+        let mut other_keys: Vec<UsizeInterval> = other.keys().map(|i| *i).collect();
+        other_keys.sort_by(|a, b| sort_fn(a, b));
+
+        let other_partitions = OrderedIntervalPartitions::from_vec_with_trusted_order(other_keys.clone());
+        let refined_keys = OrderedIntervalPartitions::from_vec_with_trusted_order(self.refined_keys)
+            .get_common_refinement(&other_partitions)
+            .into_vec();
+
+        let mut keys_list = self.keys_list;
+        keys_list.push(other_partitions);
+
+        let mut maps = self.maps;
+        maps.push(other);
+
+        CommonRefinementZipped {
+            refined_keys,
+            keys_list,
+            maps,
         }
     }
 }
@@ -244,10 +321,8 @@ impl<'a, V> IntoIterator for CommonRefinementZipped<
     fn into_iter(self) -> Self::IntoIter {
         CommonRefinementZipIter {
             refined_keys_iter: self.refined_keys.into_iter(),
-            left_keys: self.left_keys,
-            right_keys: self.right_keys,
-            left: self.left,
-            right: self.right,
+            partitions_list: self.keys_list,
+            maps: self.maps,
         }
     }
 }
@@ -259,20 +334,21 @@ impl<'a, V> Iterator for CommonRefinementZipIter<
     HashMap<UsizeInterval, V>,
     IntoIter<UsizeInterval>
 > {
-    type Item = (UsizeInterval, (Option<&'a V>, Option<&'a V>));
+    type Item = (UsizeInterval, Vec<Option<&'a V>>);
     fn next(&mut self) -> Option<Self::Item> {
         match self.refined_keys_iter.next() {
             None => None,
             Some(k) => {
-                let left = match self.left_keys.get_set_containing(&k) {
-                    None => None,
-                    Some(s) => Some(&self.left[&s])
-                };
-                let right = match self.right_keys.get_set_containing(&k) {
-                    None => None,
-                    Some(s) => Some(&self.right[&s])
-                };
-                Some((k, (left, right)))
+                let mapped: Vec<Option<&'a V>> =
+                    self.partitions_list
+                        .iter()
+                        .zip(self.maps.iter())
+                        .map(|(partitions, m)| match partitions.get_set_containing(&k) {
+                            None => None,
+                            Some(p) => Some(&m[&p])
+                        })
+                        .collect();
+                Some((k, mapped))
             }
         }
     }
