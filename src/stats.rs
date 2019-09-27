@@ -2,9 +2,12 @@ use std::ops::Deref;
 
 use num::traits::ToPrimitive;
 
-#[inline]
 pub fn n_choose_2(n: usize) -> usize {
-    n * (n - 1) / 2
+    if n < 2 {
+        0
+    } else {
+        n * (n - 1) / 2
+    }
 }
 
 pub fn kahan_sigma<'a, E, I: Iterator<Item=&'a E>, F>(element_iterator: I, op: F) -> f64
@@ -37,7 +40,7 @@ pub fn kahan_sigma_f32<'a, E, I: Iterator<Item=&'a E>, F>(element_iterator: I, o
 
 pub fn kahan_sigma_return_counter<'a, E, I: Iterator<Item=&'a E>, F>(
     element_iterator: I,
-    op: F
+    op: F,
 ) -> (f64, usize)
     where E: Copy + 'a, &'a E: Deref, F: Fn(E) -> f64 {
     let mut count = 0usize;
@@ -122,7 +125,7 @@ pub fn variance<'a, T: Clone + Iterator<Item=&'a A>, A>(element_iterator: T, ddo
 #[inline]
 pub fn standard_deviation<'a, T: Clone + Iterator<Item=&'a A>, A>(
     element_iterator: T,
-    ddof: usize
+    ddof: usize,
 ) -> f64
     where A: Copy + ToPrimitive + 'a, &'a A: Deref {
     variance(element_iterator, ddof).sqrt()

@@ -59,6 +59,7 @@ pub struct IntegerPartitionIter {
 
 impl IntegerPartitionIter {
     pub fn clone_with_range(&self, start: usize, end_exclusive: usize) -> IntegerPartitionIter {
+        assert!(start <= end_exclusive, "start ({}) has to be <= end_exclusive ({})", start, end_exclusive);
         IntegerPartitionIter {
             partitions: self.partitions[start..end_exclusive].to_vec(),
             current_cursor: 0,
@@ -80,9 +81,12 @@ impl Iterator for IntegerPartitionIter {
 }
 
 impl ExactSizeIterator for IntegerPartitionIter {
-    #[inline]
     fn len(&self) -> usize {
-        self.end_exclusive - self.current_cursor
+        if self.current_cursor >= self.end_exclusive {
+            0
+        } else {
+            self.end_exclusive - self.current_cursor
+        }
     }
 }
 

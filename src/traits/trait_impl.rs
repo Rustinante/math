@@ -25,9 +25,9 @@ impl<'a, T: Clone> Collecting<&'a T> for Vec<T> where &'a T: Deref {
     }
 }
 
-impl<'a, 's: 'a, E> ToIterator<'s, Iter<'a, E>, &'a E> for Vec<E> {
+impl<'a, E> ToIterator<'a, Iter<'a, E>, &'a E> for Vec<E> {
     #[inline]
-    fn to_iter(&'s self) -> Iter<'a, E> {
+    fn to_iter(&'a self) -> Iter<'a, E> {
         self.iter()
     }
 }

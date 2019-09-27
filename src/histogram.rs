@@ -27,6 +27,9 @@ impl<T> Histogram<T>
         if num_intervals == 0 {
             return Err(format!("num_intervals should be positive, received {}", num_intervals));
         }
+        if max < min {
+            return Err(format!("max ({}) has to be >= min ({})", max, min));
+        }
         let n = match T::from_usize(num_intervals) {
             Some(n) => n,
             None => return Err(

@@ -1,10 +1,11 @@
-use std::cmp::{max, min};
+use std::cmp::{max, min, Ordering};
 use std::ops::{Sub, SubAssign};
 
 use num::integer::Integer;
 use num::traits::cast::ToPrimitive;
 
 use crate::interval::traits::{CoalesceIntervals, Interval};
+use crate::search::binary_search::BinarySearch;
 use crate::set::ordered_integer_set::{ContiguousIntegerSet, OrderedIntegerSet};
 use crate::set::traits::Set;
 
@@ -52,30 +53,24 @@ impl<E: Integer + Copy + ToPrimitive> Sub<&ContiguousIntegerSet<E>> for OrderedI
             return self;
         }
         let num_intervals = self.intervals.len();
-        let mut start = 0;
-        let mut end = num_intervals - 1;
-        let mut mid = end / 2;
-        while end > start {
-            let interval = self.intervals[mid];
-            if interval.start > rhs.end {
-                end = mid;
-                mid = (start + end) / 2;
-            } else if rhs.start > interval.end {
-                start = mid + 1;
-                mid = (start + end) / 2;
-            } else if rhs.start >= interval.start {
-                start = mid;
-                break;
-            } else {
-                end = mid;
-                mid = (start + end) / 2;
-            }
-        }
+
+        let copy_first_n = self.intervals.binary_search_with_cmp(
+            0,
+            num_intervals,
+            rhs,
+            |interval, rhs| {
+                if interval.end > rhs.start {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
+            },
+        ).unwrap_err().unwrap_or(0);
 
         let mut diff = Vec::new();
-        diff.extend_from_slice(&self.intervals[..start]);
+        diff.extend_from_slice(&self.intervals[..copy_first_n]);
         let mut copy_from_i_to_end = None;
-        for i in start..num_intervals {
+        for i in copy_first_n..num_intervals {
             let interval = self.intervals[i];
             if interval.start > rhs.end {
                 copy_from_i_to_end = Some(i);
@@ -148,7 +143,7 @@ impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>> for OrderedInte
             }
             while rhs_i < num_rhs_intervals && rhs.intervals[rhs_i].start <= interval.end {
                 match fragments.last() {
-                    None => {},
+                    None => {}
                     Some(&l) => {
                         fragments.pop();
                         for frag in (l - rhs.intervals[rhs_i]).intervals {

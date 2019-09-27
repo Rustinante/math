@@ -82,9 +82,12 @@ impl<E: Integer + Copy> Interval for ContiguousIntegerSet<E> {
         self.end
     }
 
-    #[inline]
     fn length(&self) -> E {
-        self.end - self.start + E::one()
+        if self.start > self.end {
+            E::zero()
+        } else {
+            self.end - self.start + E::one()
+        }
     }
 }
 
@@ -117,10 +120,10 @@ impl<E> Slicing<&OrderedIntegerSet<E>, OrderedIntegerSet<E>> for Range<usize>
         let mut remaining = self.end - self.start;
         let mut contiguous_sets = Vec::new();
         for interval in input.intervals.iter() {
-            if remaining <= 0 {
+            if remaining == 0 {
                 break;
             }
-            let size = (interval.get_end() - interval.get_start() + E::one()).to_usize().unwrap();
+            let size = interval.size();
             if skip > 0 {
                 if skip >= size {
                     skip -= size;
@@ -147,7 +150,7 @@ impl<E> Slicing<&OrderedIntegerSet<E>, OrderedIntegerSet<E>> for Range<usize>
 
 impl<E: Integer + Copy + ToPrimitive> Finite for ContiguousIntegerSet<E> {
     fn size(&self) -> usize {
-        if self.is_empty() {
+        if self.start > self.end {
             0
         } else {
             (self.end - self.start + E::one()).to_usize().unwrap()
@@ -517,7 +520,7 @@ impl<E: Integer + Copy + ToPrimitive> Collecting<E> for OrderedIntegerSet<E> {
             |interval, item| {
                 if interval.start > *item + E::one() {
                     Ordering::Greater
-                } else if interval.end < *item - E::one() {
+                } else if interval.end + E::one() < *item {
                     Ordering::Less
                 } else {
                     Ordering::Equal
@@ -708,6 +711,7 @@ mod tests {
         test(&[[1, 5], [8, 12], [-4, -2]], &[-5, -5], &[[-4, -2], [1, 5], [8, 12]]);
         test(&[[1, 5], [8, 12], [-4, -2]], &[-5, 0], &[[1, 5], [8, 12]]);
         test(&[[1, 5], [8, 12]], &[6, 7], &[[1, 5], [8, 12]]);
+        test(&[[1, 5], [8, 12], [25, 100]], &[13, 20], &[[1, 5], [8, 12], [25, 100]]);
     }
 
     #[test]

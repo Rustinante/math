@@ -25,17 +25,17 @@ impl<T> BinarySearch for Vec<T> {
     fn binary_search_with_cmp<E, F>(
         &self,
         start: usize,
-        end: usize,
+        end_exclusive: usize,
         target: &E,
         cmp: F,
     ) -> Result<usize, Option<usize>>
         where F: Fn(&<Self as Index<usize>>::Output, &E) -> Ordering {
-        if start >= end {
+        if start >= end_exclusive {
             return Err(None);
         }
         let mut start = start;
         // now end is inclusive
-        let mut end = end - 1;
+        let mut end = end_exclusive - 1;
         if cmp(&self[start], target) == Ordering::Greater {
             return Err(Some(start));
         }
