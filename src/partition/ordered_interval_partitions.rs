@@ -32,6 +32,31 @@ impl<E: Integer + Copy> OrderedIntervalPartitions<E> {
                                                  .collect())
     }
 
+    /// returns the number of partitions that intersect with the `other`'s partitions
+    pub fn num_partitions_overlapped_by(&self, other: &OrderedIntervalPartitions<E>) -> usize {
+        let rhs_len = other.num_partitions();
+        let mut j = 0;
+        let mut num_overlaps = 0;
+        for interval in self.partitions.iter() {
+            while j < rhs_len && other.partitions[j].get_end() < interval.get_start() {
+                j += 1;
+            }
+            while j < rhs_len && other.partitions[j].get_start() <= interval.get_end() {
+                let rhs_interval = &other.partitions[j];
+                if interval.intersect(&rhs_interval).is_some() {
+                    num_overlaps += 1;
+                    break;
+                }
+                if rhs_interval.get_end() <= interval.get_end() {
+                    j += 1;
+                } else {
+                    break;
+                }
+            }
+        }
+        num_overlaps
+    }
+
     #[inline]
     pub fn num_partitions(&self) -> usize {
         self.partitions.len()
@@ -197,5 +222,34 @@ mod tests {
         test(&[[2usize, 6], [8, 12]], &[[0, 3], [5, 13]], &[[0, 1], [2, 3], [4, 4], [5, 6], [7, 7], [8, 12], [13, 13]]);
         test(&[[0usize, 3], [4, 8]], &[[2, 4]], &[[0, 1], [2, 3], [4, 4], [5, 8]]);
         test(&[[0usize, 4], [5, 7]], &[], &[[0, 4], [5, 7]]);
+    }
+
+    #[test]
+    fn test_num_overlapped_partitions_by() {
+        fn test<E: Integer + Copy + std::fmt::Debug>(a: &[[E; 2]], b: &[[E; 2]], expected: usize) {
+            let s1 = OrderedIntervalPartitions::from_slice(a);
+            let s2 = OrderedIntervalPartitions::from_slice(b);
+            assert_eq!(s1.num_partitions_overlapped_by(&s2), expected);
+        }
+        test::<usize>(&[], &[], 0);
+        test::<usize>(&[[0, 4]], &[], 0);
+        test::<usize>(&[[0, 4], [7, 9]], &[], 0);
+        test::<usize>(&[[0, 4]], &[[0, 0]], 1);
+        test::<usize>(&[[0, 4]], &[[0, 4]], 1);
+        test::<usize>(&[[0, 4]], &[[3, 4]], 1);
+        test::<usize>(&[[0, 4]], &[[4, 4]], 1);
+        test::<usize>(&[[0, 4]], &[[0, 0], [3, 4]], 1);
+        test::<usize>(&[[0, 4], [7, 10]], &[[0, 10]], 2);
+        test::<usize>(&[[0, 4], [7, 10]], &[[0, 3], [5, 10]], 2);
+        test::<usize>(&[[0, 4], [7, 10]], &[[0, 5], [8, 10]], 2);
+        test::<usize>(&[[0, 4], [7, 10]], &[[0, 12]], 2);
+        test::<usize>(&[[0, 4], [7, 10], [15, 30]], &[[6, 15]], 2);
+        test::<usize>(&[[0, 4], [7, 10], [15, 30]], &[[0, 15]], 3);
+        test::<usize>(&[[0, 4], [7, 10], [15, 30]], &[[0, 4], [7, 10], [15, 30]], 3);
+        test::<usize>(&[[0, 4], [7, 10], [15, 30]], &[[0, 8], [15, 30]], 3);
+        test::<usize>(&[[0, 4], [7, 10], [15, 30]], &[[0, 8]], 2);
+        test::<usize>(&[[0, 4], [7, 10], [15, 30]], &[[5, 6]], 0);
+        test::<usize>(&[[0, 4], [7, 10], [15, 30]], &[[12, 14]], 0);
+        test::<usize>(&[[0, 4], [7, 10], [15, 30]], &[], 0);
     }
 }

@@ -292,6 +292,36 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
         }
     }
 
+    /// Creates an `OrderedIntegerSet` where the i-th interval is represented by
+    /// the i-th two-element array in `slice`.
+    ///
+    /// E.g. [[2, 3], [5, 7]] will create an `OrderedIntegerSet` representing {2, 3, 5, 6, 7}, where
+    /// the contiguous integers are stored as `ContiguousIntegerSet`s
+    ///
+    /// Note that the intervals in the `slice` parameters do not have to be sorted or non-overlapping.
+    pub fn from_slice(slice: &[[E; 2]]) -> OrderedIntegerSet<E> {
+        let intervals = slice.iter()
+                             .map(|pair| ContiguousIntegerSet::new(pair[0], pair[1]))
+                             .collect();
+        OrderedIntegerSet {
+            intervals
+        }.into_coalesced()
+    }
+
+    pub fn from_contiguous_integer_sets(sets: Vec<ContiguousIntegerSet<E>>) -> OrderedIntegerSet<E> {
+        OrderedIntegerSet {
+            intervals: sets.into_coalesced()
+        }
+    }
+
+    pub fn from_ordered_coalesced_contiguous_integer_sets(
+        sets: Vec<ContiguousIntegerSet<E>>
+    ) -> OrderedIntegerSet<E> {
+        OrderedIntegerSet {
+            intervals: sets
+        }
+    }
+
     /// Returns the smallest element in the set
     /// e.g. {[1,3], [4,8]} -> 1
     pub fn first(&self) -> Option<E> {
@@ -344,36 +374,6 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
         slicer: I,
     ) -> OrderedIntegerSet<E> {
         slicer.slice(self)
-    }
-
-    /// Creates an `OrderedIntegerSet` where the i-th interval is represented by
-    /// the i-th two-element array in `slice`.
-    ///
-    /// E.g. [[2, 3], [5, 7]] will create an `OrderedIntegerSet` representing {2, 3, 5, 6, 7}, where
-    /// the contiguous integers are stored as `ContiguousIntegerSet`s
-    ///
-    /// Note that the intervals in the `slice` parameters do not have to be sorted or non-overlapping.
-    pub fn from_slice(slice: &[[E; 2]]) -> OrderedIntegerSet<E> {
-        let intervals = slice.iter()
-                             .map(|pair| ContiguousIntegerSet::new(pair[0], pair[1]))
-                             .collect();
-        OrderedIntegerSet {
-            intervals
-        }.into_coalesced()
-    }
-
-    pub fn from_contiguous_integer_sets(sets: Vec<ContiguousIntegerSet<E>>) -> OrderedIntegerSet<E> {
-        OrderedIntegerSet {
-            intervals: sets.into_coalesced()
-        }
-    }
-
-    pub fn from_ordered_coalesced_contiguous_integer_sets(
-        sets: Vec<ContiguousIntegerSet<E>>
-    ) -> OrderedIntegerSet<E> {
-        OrderedIntegerSet {
-            intervals: sets
-        }
     }
 
     #[inline]
