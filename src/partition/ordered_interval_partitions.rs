@@ -9,6 +9,7 @@ use crate::set::ordered_integer_set::ContiguousIntegerSet;
 use crate::set::traits::{Refineable, Set};
 use crate::traits::SubsetIndexable;
 
+#[derive(Clone, PartialEq, Debug)]
 pub struct OrderedIntervalPartitions<E: Integer + Copy> {
     partitions: Vec<ContiguousIntegerSet<E>>,
 }
