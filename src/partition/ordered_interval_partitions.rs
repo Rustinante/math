@@ -1,11 +1,11 @@
 use std::cmp::Ordering;
 use std::hash::Hash;
 
-use num::Integer;
+use num::{Integer, ToPrimitive};
 
 use crate::interval::traits::Interval;
 use crate::search::binary_search::BinarySearch;
-use crate::set::ordered_integer_set::ContiguousIntegerSet;
+use crate::set::ordered_integer_set::{ContiguousIntegerSet, OrderedIntegerSet};
 use crate::set::traits::{Refineable, Set};
 use crate::traits::SubsetIndexable;
 
@@ -71,6 +71,16 @@ impl<E: Integer + Copy> OrderedIntervalPartitions<E> {
     #[inline]
     pub fn into_vec(self) -> Vec<ContiguousIntegerSet<E>> {
         self.partitions
+    }
+}
+
+impl<E: Integer + Copy + ToPrimitive> OrderedIntervalPartitions<E> {
+    pub fn to_ordered_integer_set(&self) -> OrderedIntegerSet<E> {
+        OrderedIntegerSet::from_contiguous_integer_sets(self.partitions.clone())
+    }
+
+    pub fn into_ordered_integer_set(self) -> OrderedIntegerSet<E> {
+        OrderedIntegerSet::from_contiguous_integer_sets(self.into_vec())
     }
 }
 
