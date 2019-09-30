@@ -6,7 +6,7 @@ use num::{Integer, ToPrimitive};
 use crate::interval::traits::Interval;
 use crate::search::binary_search::BinarySearch;
 use crate::set::ordered_integer_set::{ContiguousIntegerSet, OrderedIntegerSet};
-use crate::set::traits::{Refineable, Set};
+use crate::set::traits::{Intersect, Refineable};
 use crate::traits::SubsetIndexable;
 
 #[derive(Clone, PartialEq, Debug)]

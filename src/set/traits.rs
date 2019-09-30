@@ -2,8 +2,10 @@ pub trait Set<E, R> {
     fn is_empty(&self) -> bool;
 
     fn contains(&self, element: E) -> bool;
+}
 
-    fn intersect(&self, other: &Self) -> R;
+pub trait Intersect<S, O> {
+    fn intersect(&self, other: S) -> O;
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]

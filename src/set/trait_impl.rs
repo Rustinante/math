@@ -1,7 +1,7 @@
 use std::collections::HashSet;
-
-use crate::set::traits::{Finite, Set};
 use std::hash::Hash;
+
+use crate::set::traits::{Finite, Intersect, Set};
 
 impl<T> Finite for Vec<T> {
     fn size(&self) -> usize {
@@ -23,7 +23,9 @@ impl<T: Clone + Eq + Hash> Set<&T, HashSet<T>> for HashSet<T> {
     fn contains(&self, item: &T) -> bool {
         self.contains(item)
     }
+}
 
+impl<T: Clone + Eq + Hash> Intersect<&HashSet<T>, HashSet<T>> for HashSet<T> {
     fn intersect(&self, other: &HashSet<T>) -> HashSet<T> {
         self.intersection(other).map(|x| x.clone()).collect()
     }

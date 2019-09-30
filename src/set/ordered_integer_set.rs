@@ -9,7 +9,7 @@ use num::traits::cast::ToPrimitive;
 use crate::interval::traits::{Coalesce, CoalesceIntervals, Interval};
 use crate::sample::Sample;
 use crate::search::binary_search::BinarySearch;
-use crate::set::traits::{Finite, Refineable, Set};
+use crate::set::traits::{Finite, Intersect, Refineable, Set};
 use crate::traits::{Collecting, Constructable, ToIterator};
 
 pub mod arithmetic;
@@ -59,12 +59,29 @@ impl<E: Integer + Copy> Set<E, Option<ContiguousIntegerSet<E>>> for ContiguousIn
     fn contains(&self, item: E) -> bool {
         item >= self.start && item <= self.end
     }
+}
 
+impl<E: Integer + Copy> Intersect<&ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>>
+for ContiguousIntegerSet<E> {
     fn intersect(&self, other: &ContiguousIntegerSet<E>) -> Option<ContiguousIntegerSet<E>> {
         if self.is_empty() || other.is_empty() || other.end < self.start || other.start > self.end {
             None
         } else {
             Some(ContiguousIntegerSet::new(max(self.start, other.start), min(self.end, other.end)))
+        }
+    }
+}
+
+impl<E: Integer + Copy + ToPrimitive> Intersect<&OrderedIntegerSet<E>, OrderedIntegerSet<E>>
+for ContiguousIntegerSet<E> {
+    fn intersect(&self, other: &OrderedIntegerSet<E>) -> OrderedIntegerSet<E> {
+        if self.is_empty() {
+            OrderedIntegerSet::new()
+        } else {
+            let s = OrderedIntegerSet::from_ordered_coalesced_contiguous_integer_sets(
+                vec![self.clone()]
+            );
+            s.intersect(other)
         }
     }
 }
@@ -447,7 +464,10 @@ impl<E: Integer + Copy + ToPrimitive> Set<E, OrderedIntegerSet<E>> for OrderedIn
         }
         self.intervals.iter().filter(|&&interval| interval.contains(item)).count() > 0
     }
+}
 
+impl<E> Intersect<&OrderedIntegerSet<E>, OrderedIntegerSet<E>> for OrderedIntegerSet<E>
+    where E: Integer + Copy + ToPrimitive {
     fn intersect(&self, other: &OrderedIntegerSet<E>) -> OrderedIntegerSet<E> {
         let mut intersection = Vec::new();
         let rhs_intervals = &other.intervals;
@@ -459,7 +479,7 @@ impl<E: Integer + Copy + ToPrimitive> Set<E, OrderedIntegerSet<E>> for OrderedIn
             }
             while j < rhs_len && rhs_intervals[j].start <= interval.end {
                 let rhs_interval = &rhs_intervals[j];
-                if let Some(i) = interval.intersect(&rhs_interval) {
+                if let Some(i) = interval.intersect(rhs_interval) {
                     intersection.push(i);
                 }
                 if rhs_interval.end <= interval.end {
@@ -470,6 +490,13 @@ impl<E: Integer + Copy + ToPrimitive> Set<E, OrderedIntegerSet<E>> for OrderedIn
             }
         }
         OrderedIntegerSet::from_contiguous_integer_sets(intersection)
+    }
+}
+
+impl<E> Intersect<&ContiguousIntegerSet<E>, OrderedIntegerSet<E>> for OrderedIntegerSet<E>
+    where E: Integer + Copy + ToPrimitive {
+    fn intersect(&self, other: &ContiguousIntegerSet<E>) -> OrderedIntegerSet<E> {
+        other.intersect(self)
     }
 }
 
@@ -600,7 +627,7 @@ mod tests {
     use num::ToPrimitive;
 
     use crate::interval::traits::*;
-    use crate::set::traits::Refineable;
+    use crate::set::traits::{Intersect, Refineable};
     use crate::traits::{Collecting, ToIterator};
 
     use super::{ContiguousIntegerSet, OrderedIntegerSet};
@@ -738,6 +765,27 @@ mod tests {
         test(&[[0, 10], [15, 20]], &[[-1, 2], [5, 7]], &[[3, 4], [8, 10], [15, 20]]);
         test(&[[0, 10], [15, 20]], &[[-1, 2], [18, 22], [5, 7]], &[[3, 4], [8, 10], [15, 17]]);
         test(&[[0, 10], [15, 20], [-10, -5]], &[[-1, 2], [18, 22], [5, 7], [-12, -3]], &[[3, 4], [8, 10], [15, 17]]);
+    }
+
+    #[test]
+    fn test_contiguous_ordered_integer_set_intersect() {
+        fn test<E: Integer + Copy + ToPrimitive + std::fmt::Debug>(
+            a: &[E; 2], b: &[[E; 2]], expected: &[[E; 2]],
+        ) {
+            let s1 = ContiguousIntegerSet::new(a[0], a[1]);
+            let s2 = OrderedIntegerSet::from_slice(b);
+            assert_eq!(s1.intersect(&s2), OrderedIntegerSet::from_slice(expected));
+            assert_eq!(s2.intersect(&s1), OrderedIntegerSet::from_slice(expected));
+        }
+        test(&[0usize, 10], &[[2, 5]], &[[2, 5]]);
+        test(&[-3, 10], &[[-5, 12]], &[[-3, 10]]);
+        test(&[-5, 12], &[[-3, 10]], &[[-3, 10]]);
+        test(&[5, 10], &[[3, 6]], &[[5, 6]]);
+        test(&[3, 6], &[[5, 10]], &[[5, 6]]);
+        test(&[0usize, 10], &[[0, 2], [8, 9]], &[[0, 2], [8, 9]]);
+        test(&[0usize, 10], &[[0, 12]], &[[0, 10]]);
+        test(&[0usize, 10], &[[12, 13], [15, 20]], &[]);
+        test(&[3usize, 10], &[[0, 3], [9, 12]], &[[3, 3], [9, 10]]);
     }
 
     #[test]
