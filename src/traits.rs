@@ -15,3 +15,7 @@ pub trait SubsetIndexable<S> {
 pub trait ToIterator<'s, I: Iterator<Item=R>, R> {
     fn to_iter(&'s self) -> I;
 }
+
+pub trait HasDuplicate {
+    fn has_duplicate(&self) -> bool;
+}
