@@ -1,3 +1,5 @@
+//! Tensor Representation and Manipulation
+
 use num::ToPrimitive;
 use std::{collections::HashSet, iter::FromIterator};
 
@@ -14,13 +16,16 @@ pub trait IntoTensor<Dtype> {
 
 /// The implementer provides an interface for the underlying data and shape.
 pub trait ShapableData<Dtype> {
+    /// Returns the underlying data.
     fn data(&self) -> &Vec<Dtype>;
 
+    /// Returns the shape associated with the data.
     fn shape(&self) -> &TensorShape;
 
+    /// Returns a mutable shape associated with the data.
     fn shape_mut(&mut self) -> &mut TensorShape;
 
-    /// Reverses the axes
+    /// Reverses the axes.
     fn t(&self) -> EphemeralView<Dtype> {
         let transposed_axes: Vec<usize> = (0..self.shape().ndim()).into_iter().rev().collect();
         let shape_transpose = self.shape().to_transposed(transposed_axes);
@@ -69,8 +74,32 @@ impl<Dtype> ShapableData<Dtype> for Tensor<Dtype> {
     }
 }
 
-/// A view of the underlying referenced data as a particular shape.
+impl<'a, Dtype> ToView<'a, Dtype> for Tensor<Dtype> {
+    fn as_shape<S: Into<TensorShape>>(&'a self, shape: S) -> EphemeralView<'a, Dtype> {
+        let target_shape: TensorShape = shape.into();
+        assert_eq!(
+            target_shape.num_elements(),
+            self.shape.num_elements(),
+            "number of elements in target shape mismatch"
+        );
+        EphemeralView {
+            data: &self.data,
+            shape: target_shape,
+        }
+    }
+}
+
+/// # A View of the Underlying Referenced Data as a Particular Shape
 /// The underlying `data` has to outlive the `EphemeralView` itself.
+///
+/// ## Examples
+/// ```
+/// use analytic::tensor::{IntoTensor, ShapableData, ToView};
+///
+/// let tensor = vec![1, 2, 3, 4].into_tensor(vec![2, 2]);
+/// let view = tensor.as_shape(vec![4, 1]);
+/// assert_eq!(view.shape().dims(), vec![4, 1]);
+/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EphemeralView<'a, Dtype> {
     data: &'a Vec<Dtype>,
@@ -124,6 +153,14 @@ impl TensorShape {
         self.dims_strides.len()
     }
 
+    pub fn num_elements(&self) -> usize {
+        if self.dims_strides.len() > 0 {
+            self.dims_strides.iter().fold(1, |acc, &(d, _)| acc * d)
+        } else {
+            0
+        }
+    }
+
     fn to_transposed(&self, axes: Vec<usize>) -> TensorShape {
         assert_eq!(
             axes.len(),
@@ -146,9 +183,15 @@ impl TensorShape {
 
 impl<'a, Dtype> ToView<'a, Dtype> for Vec<Dtype> {
     fn as_shape<S: Into<TensorShape>>(&'a self, shape: S) -> EphemeralView<'a, Dtype> {
+        let target_shape: TensorShape = shape.into();
+        assert_eq!(
+            target_shape.num_elements(),
+            self.len(),
+            "number of elements in target shape mismatch"
+        );
         EphemeralView {
             data: &self,
-            shape: shape.into(),
+            shape: target_shape,
         }
     }
 }

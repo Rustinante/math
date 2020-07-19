@@ -1,14 +1,18 @@
-use std::cmp;
-use std::fmt;
-use std::ops::Deref;
+//! A histogram consisting of a fixed number of intervals within a fixed range.
 
-use num::traits::{NumAssign, NumOps};
-use num::traits::cast::{FromPrimitive, ToPrimitive};
+use std::{cmp, fmt, ops::Deref};
+
+use num::traits::{
+    cast::{FromPrimitive, ToPrimitive},
+    NumAssign, NumOps,
+};
 
 use crate::traits::{Collecting, ToIterator};
 
+/// The Histogram consists of `num_intervals` intervals between the `min` and the `max` value.
 pub struct Histogram<T>
-    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+where
+    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display, {
     boundaries: Vec<T>,
     counters: Vec<usize>,
     num_less_than_min: usize,
@@ -16,25 +20,49 @@ pub struct Histogram<T>
 }
 
 impl<T> Histogram<T>
-    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+where
+    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display,
+{
+    /// # Initializing with Known Boundaries
+    /// Creates a Histogram consisting of `num_intervals` intervals between the values `min` and
+    /// `max`, and inserts the values from the vector of `elements` into the histogram.
+    /// Values smaller than `min` will increment the counter `num_less_than_min`,
+    /// while values larger than `max` will increment the counter `num_larger_than_max`
+    ///
+    /// # Example
+    /// ```
+    /// use analytic::histogram::Histogram;
+    ///
+    /// let histogram = Histogram::new(&vec![2, -1, 3, 5, 8], 5, 0, 10).unwrap();
+    /// assert_eq!(histogram.get_boundaries().len(), 6);
+    /// assert_eq!(histogram.get_num_less_than_min(), 1);
+    /// assert_eq!(histogram.get_num_larger_than_max(), 0);
+    /// ```
     pub fn new<'a>(
         elements: &'a Vec<T>,
         num_intervals: usize,
         min: T,
         max: T,
     ) -> Result<Histogram<T>, String>
-        where &'a T: Deref {
+    where
+        &'a T: Deref, {
         if num_intervals == 0 {
-            return Err(format!("num_intervals should be positive, received {}", num_intervals));
+            return Err(format!(
+                "num_intervals should be positive, received {}",
+                num_intervals
+            ));
         }
         if max < min {
             return Err(format!("max ({}) has to be >= min ({})", max, min));
         }
         let n = match T::from_usize(num_intervals) {
             Some(n) => n,
-            None => return Err(
-                format!("failed to convert num_intervals: usize ({}) to type T", num_intervals)
-            )
+            None => {
+                return Err(format!(
+                    "failed to convert num_intervals: usize ({}) to type T",
+                    num_intervals
+                ))
+            }
         };
         let delta = (max - min) / n;
         if delta <= T::zero() {
@@ -64,14 +92,22 @@ impl<T> Histogram<T>
             } else {
                 let i = match ((*a - min) / delta).to_usize() {
                     Some(i) => i,
-                    None => return Err(
-                        format!("failed to convert {} to an usize index", (*a - min) / delta)
-                    )
+                    None => {
+                        return Err(format!(
+                            "failed to convert {} to an usize index",
+                            (*a - min) / delta
+                        ))
+                    }
                 };
                 counters[cmp::min(i, num_intervals - 1)] += 1;
             }
         }
-        Ok(Histogram { boundaries, counters, num_less_than_min, num_larger_than_max })
+        Ok(Histogram {
+            boundaries,
+            counters,
+            num_less_than_min,
+            num_larger_than_max,
+        })
     }
 
     #[inline]
@@ -92,18 +128,24 @@ impl<T> Histogram<T>
         elements: &'a Vec<T>,
         num_intervals: usize,
     ) -> Result<Histogram<T>, String>
-        where &'a T: Deref, T: Ord {
+    where
+        &'a T: Deref,
+        T: Ord, {
         let min = match elements.iter().min() {
-            None => return Err(
-                format!("failed to extract the min elements when range is set to auto")
-            ),
-            Some(min) => min
+            None => {
+                return Err(format!(
+                    "failed to extract the min elements when range is set to auto"
+                ))
+            }
+            Some(min) => min,
         };
         let max = match elements.iter().max() {
-            None => return Err(
-                format!("failed to extract the max elements when range is set to auto")
-            ),
-            Some(max) => max
+            None => {
+                return Err(format!(
+                    "failed to extract the max elements when range is set to auto"
+                ))
+            }
+            Some(max) => max,
         };
         Histogram::new(elements, num_intervals, *min, *max)
     }
@@ -118,6 +160,14 @@ impl<T> Histogram<T>
         &self.counters
     }
 
+    pub fn get_num_less_than_min(&self) -> usize {
+        self.num_less_than_min
+    }
+
+    pub fn get_num_larger_than_max(&self) -> usize {
+        self.num_larger_than_max
+    }
+
     #[inline]
     pub fn min_boundary(&self) -> T {
         *self.boundaries.first().unwrap()
@@ -130,7 +180,9 @@ impl<T> Histogram<T>
 }
 
 impl<T> Collecting<T> for Histogram<T>
-    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+where
+    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display,
+{
     fn collect(&mut self, item: T) {
         let delta = self.boundaries[1] - self.boundaries[0];
         let num_intervals = self.num_intervals();
@@ -147,27 +199,33 @@ impl<T> Collecting<T> for Histogram<T>
 }
 
 impl<T> fmt::Display for Histogram<T>
-    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+where
+    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ratios = self.get_ratios();
         let mut cum = 0usize;
         let mut ratio_cum = 0f64;
         let mut reverse_ratio_cum = 1f64;
         let last_i = self.num_intervals() - 1;
-        writeln!(f, "{:>11.2}  {:>12.2} {:>16} {:>16} {:>16} {:>16} {:>16}",
-                 "", "", "count", "cum_count", "ratio", "cum_ratio", "rev_cum_ratio")?;
+        writeln!(
+            f,
+            "{:>11.2}  {:>12.2} {:>16} {:>16} {:>16} {:>16} {:>16}",
+            "", "", "count", "cum_count", "ratio", "cum_ratio", "rev_cum_ratio"
+        )?;
         for i in 0..last_i {
             cum += self.counters[i];
             ratio_cum += ratios[i];
-            writeln!(f,
-                     "[{:>10.2}, {:>10.2}): {:>16.2} {:>16.2} {:>16.4} {:>16.4} {:>16.4}",
-                     self.boundaries[i],
-                     self.boundaries[i + 1],
-                     self.counters[i],
-                     cum,
-                     ratios[i],
-                     ratio_cum,
-                     reverse_ratio_cum
+            writeln!(
+                f,
+                "[{:>10.2}, {:>10.2}): {:>16.2} {:>16.2} {:>16.4} {:>16.4} {:>16.4}",
+                self.boundaries[i],
+                self.boundaries[i + 1],
+                self.counters[i],
+                cum,
+                ratios[i],
+                ratio_cum,
+                reverse_ratio_cum
             )?;
             reverse_ratio_cum -= ratios[i];
         }
@@ -203,7 +261,9 @@ impl<T> fmt::Display for Histogram<T>
 pub type HistogramEntry<T> = (T, T, usize);
 
 impl<'a, T> ToIterator<'a, HistogramIter<'a, T>, HistogramEntry<T>> for Histogram<T>
-    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+where
+    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display,
+{
     fn to_iter(&'a self) -> HistogramIter<'a, T> {
         HistogramIter {
             histogram: &self,
@@ -212,25 +272,28 @@ impl<'a, T> ToIterator<'a, HistogramIter<'a, T>, HistogramEntry<T>> for Histogra
     }
 }
 
-pub struct HistogramIter<'a, T>
-    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
-    histogram: &'a Histogram<T>,
-    cursor: usize,
-}
-
 /// An iterator that iterates through the entries of the histogram
 /// ```
-/// use analytic::histogram::Histogram;
-/// use analytic::traits::ToIterator;
+/// use analytic::{histogram::Histogram, traits::ToIterator};
 /// let histogram = Histogram::new(&vec![4., 0., 3.5], 2, 0., 7.).unwrap();
 /// let mut iter = histogram.to_iter();
 /// assert_eq!(Some((0., 3.5, 1)), iter.next());
 /// assert_eq!(Some((3.5, 7., 2)), iter.next());
 /// assert_eq!(None, iter.next());
 /// ```
+pub struct HistogramIter<'a, T>
+where
+    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display, {
+    histogram: &'a Histogram<T>,
+    cursor: usize,
+}
+
 impl<'a, T> Iterator for HistogramIter<'a, T>
-    where T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display {
+where
+    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display,
+{
     type Item = HistogramEntry<T>;
+
     fn next(&mut self) -> Option<Self::Item> {
         let i = self.cursor;
         if i >= self.histogram.num_intervals() {
