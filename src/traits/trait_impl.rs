@@ -1,15 +1,6 @@
-use std::ops::Deref;
-use std::slice::Iter;
+use std::{ops::Deref, slice::Iter};
 
-use crate::traits::{Collecting, Constructable, HasDuplicate};
-use crate::traits::ToIterator;
-
-impl<T> Constructable for Vec<T> {
-    #[inline]
-    fn new() -> Vec<T> {
-        Vec::new()
-    }
-}
+use crate::traits::{Collecting, HasDuplicate, ToIterator};
 
 impl<T> Collecting<T> for Vec<T> {
     #[inline]
@@ -18,7 +9,10 @@ impl<T> Collecting<T> for Vec<T> {
     }
 }
 
-impl<'a, T: Clone> Collecting<&'a T> for Vec<T> where &'a T: Deref {
+impl<'a, T: Clone> Collecting<&'a T> for Vec<T>
+where
+    &'a T: Deref,
+{
     #[inline]
     fn collect(&mut self, item: &'a T) {
         self.push((*item).clone());
@@ -34,9 +28,7 @@ impl<'a, E> ToIterator<'a, Iter<'a, E>, &'a E> for Vec<E> {
 
 impl<T: std::cmp::Ord> HasDuplicate for Vec<T> {
     fn has_duplicate(&self) -> bool {
-        let mut indices: Vec<usize> = (0..self.len())
-            .into_iter()
-            .collect();
+        let mut indices: Vec<usize> = (0..self.len()).into_iter().collect();
         indices.sort_by_key(|index| &self[*index]);
         for (a, b) in indices.iter().zip(indices.iter().skip(1)) {
             if self[*a] == self[*b] {

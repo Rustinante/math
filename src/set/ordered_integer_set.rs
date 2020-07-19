@@ -10,7 +10,7 @@ use crate::interval::traits::{Coalesce, CoalesceIntervals, Interval};
 use crate::sample::Sample;
 use crate::search::binary_search::BinarySearch;
 use crate::set::traits::{Finite, Intersect, Refineable, Set};
-use crate::traits::{Collecting, Constructable, ToIterator};
+use crate::traits::{Collecting, ToIterator};
 
 pub mod arithmetic;
 
@@ -514,9 +514,9 @@ impl<E> CoalesceIntervals<ContiguousIntegerSet<E>, E> for OrderedIntegerSet<E>
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> Constructable for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> Default for OrderedIntegerSet<E> {
     #[inline]
-    fn new() -> OrderedIntegerSet<E> {
+    fn default() -> Self {
         OrderedIntegerSet::new()
     }
 }
