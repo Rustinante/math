@@ -1,16 +1,20 @@
-use std::cmp::{max, min, Ordering};
-use std::ops::{Sub, SubAssign};
-
-use num::integer::Integer;
-use num::traits::cast::ToPrimitive;
-
-use crate::interval::traits::{CoalesceIntervals, Interval};
-use crate::search::binary_search::BinarySearch;
-use crate::set::ordered_integer_set::{ContiguousIntegerSet, OrderedIntegerSet};
-use crate::set::traits::Set;
+use crate::{
+    interval::traits::{CoalesceIntervals, Interval},
+    search::binary_search::BinarySearch,
+    set::{
+        contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
+        traits::Set,
+    },
+};
+use num::{integer::Integer, traits::cast::ToPrimitive};
+use std::{
+    cmp::{max, min, Ordering},
+    ops::{Sub, SubAssign},
+};
 
 impl<E: Integer + Copy + ToPrimitive> Sub<&ContiguousIntegerSet<E>> for ContiguousIntegerSet<E> {
     type Output = OrderedIntegerSet<E>;
+
     fn sub(self, rhs: &ContiguousIntegerSet<E>) -> Self::Output {
         let a = self.get_start();
         let b = self.get_end();
@@ -49,30 +53,31 @@ impl<E: Integer + Copy + ToPrimitive> Sub<&ContiguousIntegerSet<E>> for OrderedI
 
     #[inline]
     fn sub(self, rhs: &ContiguousIntegerSet<E>) -> Self::Output {
-        if rhs.end < self.intervals[0].start || rhs.start > self.intervals.last().unwrap().end {
+        if rhs.get_end() < self.intervals[0].get_start()
+            || rhs.get_start() > self.intervals.last().unwrap().get_end()
+        {
             return self;
         }
         let num_intervals = self.intervals.len();
 
-        let copy_first_n = self.intervals.binary_search_with_cmp(
-            0,
-            num_intervals,
-            rhs,
-            |interval, rhs| {
-                if interval.end > rhs.start {
+        let copy_first_n = self
+            .intervals
+            .binary_search_with_cmp(0, num_intervals, rhs, |interval, rhs| {
+                if interval.get_end() > rhs.get_start() {
                     Ordering::Greater
                 } else {
                     Ordering::Less
                 }
-            },
-        ).unwrap_err().unwrap_or(0);
+            })
+            .unwrap_err()
+            .unwrap_or(0);
 
         let mut diff = Vec::new();
         diff.extend_from_slice(&self.intervals[..copy_first_n]);
         let mut copy_from_i_to_end = None;
         for i in copy_first_n..num_intervals {
             let interval = self.intervals[i];
-            if interval.start > rhs.end {
+            if interval.get_start() > rhs.get_end() {
                 copy_from_i_to_end = Some(i);
                 break;
             }
@@ -112,6 +117,7 @@ impl<E: Integer + Copy + ToPrimitive> SubAssign<ContiguousIntegerSet<E>> for Ord
 
 impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>> for ContiguousIntegerSet<E> {
     type Output = OrderedIntegerSet<E>;
+
     fn sub(self, rhs: &OrderedIntegerSet<E>) -> Self::Output {
         let mut diff = OrderedIntegerSet::from(vec![self]);
         for interval in rhs.intervals_iter() {
@@ -132,16 +138,20 @@ impl<E: Integer + Copy + ToPrimitive> Sub<OrderedIntegerSet<E>> for ContiguousIn
 
 impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>> for OrderedIntegerSet<E> {
     type Output = Self;
+
     fn sub(self, rhs: &OrderedIntegerSet<E>) -> Self::Output {
         let mut diff = Vec::new();
         let mut rhs_i = 0;
         let num_rhs_intervals = rhs.intervals.len();
         for interval in self.intervals.iter() {
             let mut fragments = vec![*interval];
-            while rhs_i < num_rhs_intervals && rhs.intervals[rhs_i].end < interval.start {
+            while rhs_i < num_rhs_intervals && rhs.intervals[rhs_i].get_end() < interval.get_start()
+            {
                 rhs_i += 1;
             }
-            while rhs_i < num_rhs_intervals && rhs.intervals[rhs_i].start <= interval.end {
+            while rhs_i < num_rhs_intervals
+                && rhs.intervals[rhs_i].get_start() <= interval.get_end()
+            {
                 match fragments.last() {
                     None => {}
                     Some(&l) => {
@@ -151,7 +161,7 @@ impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>> for OrderedInte
                         }
                     }
                 };
-                if rhs.intervals[rhs_i].end <= interval.end {
+                if rhs.intervals[rhs_i].get_end() <= interval.get_end() {
                     rhs_i += 1;
                 } else {
                     break;
@@ -184,4 +194,3 @@ impl<E: Integer + Copy + ToPrimitive> SubAssign<OrderedIntegerSet<E>> for Ordere
         *self = self.to_owned() - &rhs
     }
 }
-

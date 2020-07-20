@@ -57,7 +57,7 @@ pub trait Sample<'a, I: Iterator<Item = E>, E, O: Collecting<E> + Default>:
 #[cfg(test)]
 mod tests {
     use crate::set::{
-        ordered_integer_set::{ContiguousIntegerSet, OrderedIntegerSet},
+        contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
         traits::Finite,
     };
 

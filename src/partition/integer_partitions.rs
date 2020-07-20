@@ -1,21 +1,26 @@
+//! Models a collection of disjoint integer intervals
+
+use crate::set::{
+    contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
+};
+use rayon::iter::{
+    plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer},
+    IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
+};
 use std::ops::Index;
 
-use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
-use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer};
+pub type Partition = OrderedIntegerSet<i64>;
 
-use crate::set::ordered_integer_set::{ContiguousIntegerSet, OrderedIntegerSet};
-
-pub type Partition = OrderedIntegerSet<usize>;
-
-#[derive(Clone, PartialEq, Debug)]
+/// A collection of disjoint integer intervals
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IntegerPartitions {
-    partitions: Vec<Partition>
+    partitions: Vec<Partition>,
 }
 
 impl IntegerPartitions {
     pub fn new(partitions: Vec<Partition>) -> IntegerPartitions {
         IntegerPartitions {
-            partitions
+            partitions,
         }
     }
 
@@ -24,6 +29,7 @@ impl IntegerPartitions {
         self.partitions.len()
     }
 
+    /// Creates an iterator that iterates through the partitions.
     pub fn iter(&self) -> IntegerPartitionIter {
         IntegerPartitionIter {
             partitions: self.partitions.clone(),
@@ -32,12 +38,14 @@ impl IntegerPartitions {
         }
     }
 
+    /// Converts the collection of partitions into a single `Partition`
+    /// consisting of the same integer elements.
     pub fn union(&self) -> Partition {
-        let intervals: Vec<ContiguousIntegerSet<usize>> =
-            self.partitions
-                .iter()
-                .flat_map(|p| p.get_intervals_by_ref().clone())
-                .collect();
+        let intervals: Vec<ContiguousIntegerSet<i64>> = self
+            .partitions
+            .iter()
+            .flat_map(|p| p.get_intervals_by_ref().clone())
+            .collect();
         OrderedIntegerSet::from_contiguous_integer_sets(intervals)
     }
 }
@@ -59,7 +67,12 @@ pub struct IntegerPartitionIter {
 
 impl IntegerPartitionIter {
     pub fn clone_with_range(&self, start: usize, end_exclusive: usize) -> IntegerPartitionIter {
-        assert!(start <= end_exclusive, "start ({}) has to be <= end_exclusive ({})", start, end_exclusive);
+        assert!(
+            start <= end_exclusive,
+            "start ({}) has to be <= end_exclusive ({})",
+            start,
+            end_exclusive
+        );
         IntegerPartitionIter {
             partitions: self.partitions[start..end_exclusive].to_vec(),
             current_cursor: 0,
@@ -70,6 +83,7 @@ impl IntegerPartitionIter {
 
 impl Iterator for IntegerPartitionIter {
     type Item = Partition;
+
     fn next(&mut self) -> Option<Self::Item> {
         if self.current_cursor >= self.end_exclusive {
             None
@@ -102,24 +116,26 @@ impl DoubleEndedIterator for IntegerPartitionIter {
 }
 
 impl<'a> IntoParallelIterator for IntegerPartitionIter {
-    type Iter = IntegerPartitionParallelIter;
     type Item = <IntegerPartitionParallelIter as ParallelIterator>::Item;
+    type Iter = IntegerPartitionParallelIter;
 
     fn into_par_iter(self) -> Self::Iter {
-        IntegerPartitionParallelIter { iter: self }
+        IntegerPartitionParallelIter {
+            iter: self,
+        }
     }
 }
 
 pub struct IntegerPartitionParallelIter {
-    iter: IntegerPartitionIter
+    iter: IntegerPartitionIter,
 }
 
 impl ParallelIterator for IntegerPartitionParallelIter {
     type Item = <IntegerPartitionIter as Iterator>::Item;
 
     fn drive_unindexed<C>(self, consumer: C) -> C::Result
-        where C: UnindexedConsumer<Self::Item>
-    {
+    where
+        C: UnindexedConsumer<Self::Item>, {
         bridge(self, consumer)
     }
 
@@ -134,15 +150,17 @@ impl IndexedParallelIterator for IntegerPartitionParallelIter {
     }
 
     fn drive<C>(self, consumer: C) -> C::Result
-        where C: Consumer<Self::Item>,
-    {
+    where
+        C: Consumer<Self::Item>, {
         bridge(self, consumer)
     }
 
     fn with_producer<CB>(self, callback: CB) -> CB::Output
-        where CB: ProducerCallback<Self::Item>,
-    {
-        callback.callback(IntegerPartitionIterProducer { iter: self.iter })
+    where
+        CB: ProducerCallback<Self::Item>, {
+        callback.callback(IntegerPartitionIterProducer {
+            iter: self.iter,
+        })
     }
 }
 
@@ -151,8 +169,8 @@ struct IntegerPartitionIterProducer {
 }
 
 impl Producer for IntegerPartitionIterProducer {
-    type Item = <IntegerPartitionIter as Iterator>::Item;
     type IntoIter = IntegerPartitionIter;
+    type Item = <IntegerPartitionIter as Iterator>::Item;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -162,18 +180,18 @@ impl Producer for IntegerPartitionIterProducer {
     fn split_at(self, index: usize) -> (Self, Self) {
         (
             IntegerPartitionIterProducer {
-                iter: self.iter.clone_with_range(0, index)
+                iter: self.iter.clone_with_range(0, index),
             },
             IntegerPartitionIterProducer {
-                iter: self.iter.clone_with_range(index, self.iter.len())
-            }
+                iter: self.iter.clone_with_range(index, self.iter.len()),
+            },
         )
     }
 }
 
 impl IntoIterator for IntegerPartitionIterProducer {
-    type Item = <IntegerPartitionIter as Iterator>::Item;
     type IntoIter = IntegerPartitionIter;
+    type Item = <IntegerPartitionIter as Iterator>::Item;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -196,10 +214,22 @@ mod tests {
             OrderedIntegerSet::from_slice(&[[21, 24]]),
         ]);
         let mut iter = partitions.iter();
-        assert_eq!(iter.next(), Some(OrderedIntegerSet::from_slice(&[[1, 3], [6, 9]])));
-        assert_eq!(iter.next(), Some(OrderedIntegerSet::from_slice(&[[4, 5], [10, 14]])));
-        assert_eq!(iter.next(), Some(OrderedIntegerSet::from_slice(&[[15, 20], [25, 26]])));
-        assert_eq!(iter.next(), Some(OrderedIntegerSet::from_slice(&[[21, 24]])));
+        assert_eq!(
+            iter.next(),
+            Some(OrderedIntegerSet::from_slice(&[[1, 3], [6, 9]]))
+        );
+        assert_eq!(
+            iter.next(),
+            Some(OrderedIntegerSet::from_slice(&[[4, 5], [10, 14]]))
+        );
+        assert_eq!(
+            iter.next(),
+            Some(OrderedIntegerSet::from_slice(&[[15, 20], [25, 26]]))
+        );
+        assert_eq!(
+            iter.next(),
+            Some(OrderedIntegerSet::from_slice(&[[21, 24]]))
+        );
         assert_eq!(iter.next(), None);
 
         let num_elements: usize = partitions.iter().into_par_iter().map(|p| p.size()).sum();

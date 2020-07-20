@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::vec::IntoIter;
 
 use crate::partition::ordered_interval_partitions::OrderedIntervalPartitions;
-use crate::set::ordered_integer_set::ContiguousIntegerSet;
+use crate::set::contiguous_integer_set::ContiguousIntegerSet;
 use crate::set::traits::Refineable;
 use crate::traits::SubsetIndexable;
 
