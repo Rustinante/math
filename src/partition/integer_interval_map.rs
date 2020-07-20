@@ -15,7 +15,7 @@ pub struct IntegerIntervalMap<T> {
     map: BTreeMap<IntegerInterval, T>,
 }
 
-impl<T: Copy + Num + Debug> IntegerIntervalMap<T> {
+impl<T: Copy + Num> IntegerIntervalMap<T> {
     pub fn new() -> Self {
         IntegerIntervalMap {
             map: BTreeMap::new(),
