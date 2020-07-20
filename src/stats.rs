@@ -1,7 +1,10 @@
-use std::cmp::{min, Ordering};
-use std::ops::Deref;
+pub mod correlation;
 
 use num::traits::ToPrimitive;
+use std::{
+    cmp::{min, Ordering},
+    ops::Deref,
+};
 
 pub fn n_choose_2(n: usize) -> usize {
     if n < 2 {
@@ -11,16 +14,15 @@ pub fn n_choose_2(n: usize) -> usize {
     }
 }
 
-pub fn kahan_sigma<'a, E, I: Iterator<Item = &'a E>, F>(element_iterator: I, op: F) -> f64
+pub fn kahan_sigma<E, I: Iterator<Item = E>, F>(element_iterator: I, op: F) -> f64
 where
-    E: Copy + 'a,
-    &'a E: Deref,
-    F: Fn(E) -> f64 {
+    E: Copy,
+    F: Fn(E) -> f64, {
     // Kahan summation algorithm
     let mut sum = 0f64;
     let mut lower_bits = 0f64;
     for a in element_iterator {
-        let y = op(*a) - lower_bits;
+        let y = op(a) - lower_bits;
         let new_sum = sum + y;
         lower_bits = (new_sum - sum) - y;
         sum = new_sum;
@@ -28,16 +30,15 @@ where
     sum
 }
 
-pub fn kahan_sigma_f32<'a, E, I: Iterator<Item = &'a E>, F>(element_iterator: I, op: F) -> f32
+pub fn kahan_sigma_f32<E, I: Iterator<Item = E>, F>(element_iterator: I, op: F) -> f32
 where
-    E: Copy + 'a,
-    &'a E: Deref,
-    F: Fn(E) -> f32 {
+    E: Copy,
+    F: Fn(E) -> f32, {
     // Kahan summation algorithm
     let mut sum = 0f32;
     let mut lower_bits = 0f32;
     for a in element_iterator {
-        let y = op(*a) - lower_bits;
+        let y = op(a) - lower_bits;
         let new_sum = sum + y;
         lower_bits = (new_sum - sum) - y;
         sum = new_sum;
@@ -45,21 +46,20 @@ where
     sum
 }
 
-pub fn kahan_sigma_return_counter<'a, E, I: Iterator<Item = &'a E>, F>(
+pub fn kahan_sigma_return_counter<E, I: Iterator<Item = E>, F>(
     element_iterator: I,
-    op: F
+    op: F,
 ) -> (f64, usize)
 where
-    E: Copy + 'a,
-    &'a E: Deref,
-    F: Fn(E) -> f64 {
+    E: Copy,
+    F: Fn(E) -> f64, {
     let mut count = 0usize;
     // Kahan summation algorithm
     let mut sum = 0f64;
     let mut lower_bits = 0f64;
     for a in element_iterator {
         count += 1;
-        let y = op(*a) - lower_bits;
+        let y = op(a) - lower_bits;
         let new_sum = sum + y;
         lower_bits = (new_sum - sum) - y;
         sum = new_sum;
@@ -71,7 +71,7 @@ where
 pub fn sum<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f64
 where
     A: Copy + ToPrimitive + 'a,
-    &'a A: Deref {
+    &'a A: Deref, {
     kahan_sigma(element_iterator, |a| a.to_f64().unwrap())
 }
 
@@ -79,7 +79,7 @@ where
 pub fn sum_f32<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f32
 where
     A: Copy + ToPrimitive + 'a,
-    &'a A: Deref {
+    &'a A: Deref, {
     kahan_sigma_f32(element_iterator, |a| a.to_f32().unwrap())
 }
 
@@ -87,7 +87,7 @@ where
 pub fn sum_of_squares<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f64
 where
     A: Copy + ToPrimitive + 'a,
-    &'a A: Deref {
+    &'a A: Deref, {
     kahan_sigma(element_iterator, |a| {
         let a_f64 = a.to_f64().unwrap();
         a_f64 * a_f64
@@ -98,7 +98,7 @@ where
 pub fn sum_of_squares_f32<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f32
 where
     A: Copy + ToPrimitive + 'a,
-    &'a A: Deref {
+    &'a A: Deref, {
     kahan_sigma_f32(element_iterator, |a| {
         let a_f32 = a.to_f32().unwrap();
         a_f32 * a_f32
@@ -109,7 +109,7 @@ where
 pub fn sum_of_fourth_power_f32<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f32
 where
     A: Copy + ToPrimitive + 'a,
-    &'a A: Deref {
+    &'a A: Deref, {
     kahan_sigma_f32(element_iterator, |a| {
         let a_f32 = a.to_f32().unwrap();
         a_f32 * a_f32 * a_f32 * a_f32
@@ -120,7 +120,7 @@ where
 pub fn mean<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f64
 where
     A: Copy + ToPrimitive + 'a,
-    &'a A: Deref {
+    &'a A: Deref, {
     let (sum, count) = kahan_sigma_return_counter(element_iterator, |a| a.to_f64().unwrap());
     sum / count as f64
 }
@@ -133,7 +133,7 @@ where
 pub fn variance<'a, T: Clone + Iterator<Item = &'a A>, A>(element_iterator: T, ddof: usize) -> f64
 where
     A: Copy + ToPrimitive + 'a,
-    &'a A: Deref {
+    &'a A: Deref, {
     let mean = mean(element_iterator.clone());
     let (sum, count) = kahan_sigma_return_counter(element_iterator, move |a| {
         let a_f64 = a.to_f64().unwrap() - mean;
@@ -149,11 +149,11 @@ where
 #[inline]
 pub fn standard_deviation<'a, T: Clone + Iterator<Item = &'a A>, A>(
     element_iterator: T,
-    ddof: usize
+    ddof: usize,
 ) -> f64
 where
     A: Copy + ToPrimitive + 'a,
-    &'a A: Deref {
+    &'a A: Deref, {
     variance(element_iterator, ddof).sqrt()
 }
 
@@ -161,11 +161,11 @@ where
 pub fn percentile_by<T, F>(
     mut numbers: Vec<T>,
     percentile_ratio: f64,
-    mut compare: F
+    mut compare: F,
 ) -> Result<T, String>
 where
     T: Clone,
-    F: FnMut(&T, &T) -> Ordering {
+    F: FnMut(&T, &T) -> Ordering, {
     if numbers.len() == 0 || percentile_ratio < 0. || percentile_ratio > 1. {
         return Err("percentile_by received an empty vector".to_string());
     }
@@ -173,7 +173,7 @@ where
 
     Ok(numbers[min(
         (numbers.len() as f64 * percentile_ratio).floor() as usize,
-        numbers.len() - 1
+        numbers.len() - 1,
     )]
     .clone())
 }
@@ -182,17 +182,22 @@ where
 mod tests {
     use std::iter::{FromIterator, Iterator};
 
-    use rand::seq::SliceRandom;
-    use rand::Rng;
+    use rand::{seq::SliceRandom, Rng};
 
     use super::{mean, percentile_by, standard_deviation, sum, sum_of_squares, variance};
+    use crate::stats::sum_f32;
 
     const F64_ERROR_TOLERANCE: f64 = 1e-6;
+    const F32_ERROR_TOLERANCE: f32 = 1e-6;
 
     #[test]
     fn test_sum() {
         let elements = vec![1, 5, 3, 2, 7, 100, 1234, 234, 12, 0, 1234];
         assert_eq!(elements.iter().sum::<i32>() as f64, sum(elements.iter()));
+        assert!(
+            (elements.iter().sum::<i32>() as f32 - sum_f32(elements.iter())).abs()
+                < F32_ERROR_TOLERANCE
+        );
     }
 
     #[test]
