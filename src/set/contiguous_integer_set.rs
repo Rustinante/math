@@ -11,8 +11,10 @@ use std::{
 
 pub type IntegerIntervalRefinement<E> = Vec<ContiguousIntegerSet<E>>;
 
-/// represents the set of integers in [start, end]
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+/// Represents the set of integers in [start, end].
+/// `Ord` is automatically derived so that comparison is done lexicographically
+/// with `start` first and `end` second.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
 pub struct ContiguousIntegerSet<E: Integer + Copy> {
     start: E,
     end: E,
@@ -56,6 +58,28 @@ impl<E: Integer + Copy> Set<E, Option<ContiguousIntegerSet<E>>> for ContiguousIn
     }
 }
 
+impl<E: Integer + Copy> Interval for ContiguousIntegerSet<E> {
+    type Element = E;
+
+    #[inline]
+    fn get_start(&self) -> E {
+        self.start
+    }
+
+    #[inline]
+    fn get_end(&self) -> E {
+        self.end
+    }
+
+    fn length(&self) -> E {
+        if self.start > self.end {
+            E::zero()
+        } else {
+            self.end - self.start + E::one()
+        }
+    }
+}
+
 impl<E: Integer + Copy> Intersect<&ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>>
     for ContiguousIntegerSet<E>
 {
@@ -95,24 +119,12 @@ impl<E: Integer + Copy> Coalesce<Self> for ContiguousIntegerSet<E> {
     }
 }
 
-impl<E: Integer + Copy> Interval for ContiguousIntegerSet<E> {
-    type Element = E;
-
-    #[inline]
-    fn get_start(&self) -> E {
-        self.start
-    }
-
-    #[inline]
-    fn get_end(&self) -> E {
-        self.end
-    }
-
-    fn length(&self) -> E {
+impl<E: Integer + Copy + ToPrimitive> Finite for ContiguousIntegerSet<E> {
+    fn size(&self) -> usize {
         if self.start > self.end {
-            E::zero()
+            0
         } else {
-            self.end - self.start + E::one()
+            (self.end - self.start + E::one()).to_usize().unwrap()
         }
     }
 }
@@ -129,16 +141,6 @@ where
                 input.start + E::from_usize(self.start).unwrap(),
                 input.start + E::from_usize(self.end).unwrap() - E::one(),
             ))
-        }
-    }
-}
-
-impl<E: Integer + Copy + ToPrimitive> Finite for ContiguousIntegerSet<E> {
-    fn size(&self) -> usize {
-        if self.start > self.end {
-            0
-        } else {
-            (self.end - self.start + E::one()).to_usize().unwrap()
         }
     }
 }
@@ -242,5 +244,27 @@ impl<E: Integer + Copy> Iterator for ContiguousIntegerSetIter<E> {
             self.current = self.current + E::one();
             Some(val)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::set::contiguous_integer_set::ContiguousIntegerSet;
+
+    #[test]
+    fn test_ord() {
+        assert!(ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(3, 4));
+        assert!(ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(3, 5));
+        assert!(ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(3, 8));
+        assert!(ContiguousIntegerSet::new(2, 3) < ContiguousIntegerSet::new(4, 5));
+        assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(2, 4));
+        assert!(ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(2, 8));
+        assert_eq!(
+            ContiguousIntegerSet::new(2, 2),
+            ContiguousIntegerSet::new(2, 2)
+        );
+        assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 8));
+        assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 5));
+        assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 3));
     }
 }

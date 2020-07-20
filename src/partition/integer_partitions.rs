@@ -1,4 +1,4 @@
-//! Models a collection of disjoint integer intervals
+//! Models a collection of disjoint integer intervals.
 
 use crate::set::{
     contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
@@ -116,8 +116,8 @@ impl DoubleEndedIterator for IntegerPartitionIter {
 }
 
 impl<'a> IntoParallelIterator for IntegerPartitionIter {
-    type Item = <IntegerPartitionParallelIter as ParallelIterator>::Item;
     type Iter = IntegerPartitionParallelIter;
+    type Item = <IntegerPartitionParallelIter as ParallelIterator>::Item;
 
     fn into_par_iter(self) -> Self::Iter {
         IntegerPartitionParallelIter {
@@ -169,8 +169,8 @@ struct IntegerPartitionIterProducer {
 }
 
 impl Producer for IntegerPartitionIterProducer {
-    type IntoIter = IntegerPartitionIter;
     type Item = <IntegerPartitionIter as Iterator>::Item;
+    type IntoIter = IntegerPartitionIter;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {

@@ -100,6 +100,10 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.intervals.is_empty()
+    }
+
     /// Returns both the smallest and the largest element in the set
     /// e.g. {[1,3], [4,8]} -> the tuple (1, 8)
     pub fn first_and_last(&self) -> Option<(E, E)> {
@@ -235,6 +239,7 @@ impl<E> Intersect<&ContiguousIntegerSet<E>, OrderedIntegerSet<E>> for OrderedInt
 where
     E: Integer + Copy + ToPrimitive,
 {
+    #[inline]
     fn intersect(&self, other: &ContiguousIntegerSet<E>) -> OrderedIntegerSet<E> {
         other.intersect(self)
     }
@@ -429,7 +434,7 @@ impl<E: Integer + Copy + ToPrimitive> ToIterator<'_, IntegerSetIter<E>, E>
 }
 
 impl<E> Sample<'_, IntegerSetIter<E>, E, OrderedIntegerSet<E>> for OrderedIntegerSet<E> where
-    E: Integer + Copy + ToPrimitive + Sum
+    E: Integer + Copy + Sum + ToPrimitive
 {
 }
 

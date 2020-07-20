@@ -8,23 +8,19 @@ pub trait Intersect<S, O> {
     fn intersect(&self, other: S) -> O;
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum CountableType {
     Finite(usize),
     CountablyInfinite,
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Cardinality {
     Countable(CountableType),
     Uncountable,
 }
 
-pub trait HasCardinality {
-    fn get_cardinality(&self) -> Cardinality;
-}
-
-pub trait Countable: HasCardinality {
+pub trait Countable {
     fn count(&self) -> CountableType;
 
     fn is_finite(&self) -> bool {
@@ -32,20 +28,8 @@ pub trait Countable: HasCardinality {
     }
 }
 
-impl<T: Countable> HasCardinality for T {
-    fn get_cardinality(&self) -> Cardinality {
-        Cardinality::Countable(T::count(self))
-    }
-}
-
-pub trait Finite: Countable {
+pub trait Finite {
     fn size(&self) -> usize;
-}
-
-impl<T: Finite> Countable for T {
-    fn count(&self) -> CountableType {
-        CountableType::Finite(T::size(self))
-    }
 }
 
 /// Given two sets of the same type that are `Refineable`, their common refinement can be obtained

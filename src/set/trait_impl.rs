@@ -1,5 +1,4 @@
-use std::collections::HashSet;
-use std::hash::Hash;
+use std::{collections::HashSet, hash::Hash};
 
 use crate::set::traits::{Finite, Intersect, Set};
 
@@ -33,18 +32,8 @@ impl<T: Clone + Eq + Hash> Intersect<&HashSet<T>, HashSet<T>> for HashSet<T> {
 
 #[cfg(test)]
 mod tests {
+    use crate::set::traits::Set;
     use std::collections::HashSet;
-
-    use crate::set::traits::{Cardinality, Countable, CountableType, Finite, HasCardinality, Set};
-
-    #[test]
-    fn test_finite_vec() {
-        let v = vec![2, 5, 1, 7, -12, 3, 5, 71, -2];
-        assert_eq!(Finite::size(&v), v.len());
-        assert_eq!(Countable::count(&v), CountableType::Finite(v.len()));
-        assert_eq!(Countable::is_finite(&v), true);
-        assert_eq!(HasCardinality::get_cardinality(&v), Cardinality::Countable(CountableType::Finite(v.len())));
-    }
 
     #[test]
     fn test_set() {

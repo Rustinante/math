@@ -111,8 +111,8 @@ impl<E: Integer + Copy + Hash> SubsetIndexable<ContiguousIntegerSet<E>>
 }
 
 impl<E: Integer + Copy + Hash> OrderedIntervalPartitions<E> {
-    /// if there is a partition containing the subinterval, returns a tuple `(partition_index,
-    /// partition)`
+    /// if there is a partition containing the subinterval, returns a tuple
+    /// `(partition_index, partition)`
     pub fn get_partition_containing(
         &self,
         subinterval: &ContiguousIntegerSet<E>,
