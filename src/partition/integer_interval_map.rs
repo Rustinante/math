@@ -103,6 +103,38 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
         }
     }
 
+    /// # Example
+    /// ```
+    /// use analytic::partition::integer_interval_map::{IntegerInterval, IntegerIntervalMap};
+    ///
+    /// let mut interval_map = IntegerIntervalMap::new();
+    /// interval_map.aggregate(IntegerInterval::new(-1, 4), 2);
+    /// interval_map.aggregate(IntegerInterval::new(6, 8), 4);
+    /// interval_map.aggregate(IntegerInterval::new(4, 7), 1);
+    ///
+    /// let expected = vec![
+    ///     (IntegerInterval::new(-1, 3), 2),
+    ///     (IntegerInterval::new(4, 4), 3),
+    ///     (IntegerInterval::new(5, 5), 1),
+    ///     (IntegerInterval::new(6, 7), 5),
+    ///     (IntegerInterval::new(8, 8), 4),
+    /// ];
+    /// for ((interval, val), (expected_interval, exptected_val)) in
+    ///     interval_map.iter().zip(expected.iter())
+    /// {
+    ///     assert_eq!(interval, expected_interval);
+    ///     assert_eq!(val, exptected_val);
+    /// }
+    /// ```
+    pub fn iter(&self) -> std::collections::btree_map::Iter<IntegerInterval, T> {
+        self.map.iter()
+    }
+
+    /// Converts into the underlying `BTreeMap`
+    pub fn into_map(self) -> BTreeMap<IntegerInterval, T> {
+        self.map
+    }
+
     /// Returns a `Some` value only if the key corresponds to one of the current exact intervals
     /// and not its subset or superset.
     ///
