@@ -1,3 +1,5 @@
+//! # Blanket implementations for online sampling algorithms
+
 use rand::distributions::{Distribution, Uniform};
 
 use crate::{

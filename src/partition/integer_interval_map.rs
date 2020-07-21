@@ -1,18 +1,19 @@
-//! Maps integer intervals to their associated values.
+//! Maps integer intervals to their associated values
 
-use crate::set::{
-    contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
-    traits::Intersect,
+use crate::{
+    interval::I64Interval,
+    set::{
+        contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
+        traits::Intersect,
+    },
 };
 use num::Num;
 use std::{collections::BTreeMap, fmt::Debug};
 
-pub type IntegerInterval = ContiguousIntegerSet<i64>;
-
-/// Maps `IntegerInterval`s to values of a numeric type `T`.
+/// Maps `I64Interval`s to values of a numeric type `T`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IntegerIntervalMap<T> {
-    map: BTreeMap<IntegerInterval, T>,
+    map: BTreeMap<I64Interval, T>,
 }
 
 impl<T: Copy + Num> IntegerIntervalMap<T> {
@@ -30,29 +31,30 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
     ///
     /// # Example
     /// ```
-    /// use analytic::partition::integer_interval_map::{IntegerInterval, IntegerIntervalMap};
+    /// use analytic::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
     ///
-    /// // -1 0 1 2 3 4             +2
-    /// //                6 7 8     +4
-    /// //            4 5 6 7       +1
-    /// //----------------------------
-    /// //  2 2 2 2 2 3 1 5 5 4
+    /// //                          | value
+    /// // -1 0 1 2 3 4             | +2
+    /// //                6 7 8     | +4
+    /// //            4 5 6 7       | +1
+    /// //---------------------------
+    /// //  2 2 2 2 2 3 1 5 5 4     | superposed values
     ///
     /// let mut interval_map = IntegerIntervalMap::new();
-    /// interval_map.aggregate(IntegerInterval::new(-1, 4), 2);
-    /// interval_map.aggregate(IntegerInterval::new(6, 8), 4);
-    /// interval_map.aggregate(IntegerInterval::new(4, 7), 1);
+    /// interval_map.aggregate(I64Interval::new(-1, 4), 2);
+    /// interval_map.aggregate(I64Interval::new(6, 8), 4);
+    /// interval_map.aggregate(I64Interval::new(4, 7), 1);
     ///
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(-1, 3)), Some(2));
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(4, 4)), Some(3));
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(5, 5)), Some(1));
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(6, 7)), Some(5));
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(8, 8)), Some(4));
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(-1, 4)), None);
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(6, 8)), None);
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(4, 7)), None);
+    /// assert_eq!(interval_map.get(&I64Interval::new(-1, 3)), Some(2));
+    /// assert_eq!(interval_map.get(&I64Interval::new(4, 4)), Some(3));
+    /// assert_eq!(interval_map.get(&I64Interval::new(5, 5)), Some(1));
+    /// assert_eq!(interval_map.get(&I64Interval::new(6, 7)), Some(5));
+    /// assert_eq!(interval_map.get(&I64Interval::new(8, 8)), Some(4));
+    /// assert_eq!(interval_map.get(&I64Interval::new(-1, 4)), None);
+    /// assert_eq!(interval_map.get(&I64Interval::new(6, 8)), None);
+    /// assert_eq!(interval_map.get(&I64Interval::new(4, 7)), None);
     /// ```
-    pub fn aggregate(&mut self, key: IntegerInterval, value: T) {
+    pub fn aggregate(&mut self, key: I64Interval, value: T) {
         let (start, end) = key.get_start_and_end();
         let mut remaining_interval = OrderedIntegerSet::from_contiguous_integer_sets(vec![key]);
         let mut to_add = Vec::new();
@@ -105,19 +107,19 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
 
     /// # Example
     /// ```
-    /// use analytic::partition::integer_interval_map::{IntegerInterval, IntegerIntervalMap};
+    /// use analytic::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
     ///
     /// let mut interval_map = IntegerIntervalMap::new();
-    /// interval_map.aggregate(IntegerInterval::new(-1, 4), 2);
-    /// interval_map.aggregate(IntegerInterval::new(6, 8), 4);
-    /// interval_map.aggregate(IntegerInterval::new(4, 7), 1);
+    /// interval_map.aggregate(I64Interval::new(-1, 4), 2);
+    /// interval_map.aggregate(I64Interval::new(6, 8), 4);
+    /// interval_map.aggregate(I64Interval::new(4, 7), 1);
     ///
     /// let expected = vec![
-    ///     (IntegerInterval::new(-1, 3), 2),
-    ///     (IntegerInterval::new(4, 4), 3),
-    ///     (IntegerInterval::new(5, 5), 1),
-    ///     (IntegerInterval::new(6, 7), 5),
-    ///     (IntegerInterval::new(8, 8), 4),
+    ///     (I64Interval::new(-1, 3), 2),
+    ///     (I64Interval::new(4, 4), 3),
+    ///     (I64Interval::new(5, 5), 1),
+    ///     (I64Interval::new(6, 7), 5),
+    ///     (I64Interval::new(8, 8), 4),
     /// ];
     /// for ((interval, val), (expected_interval, exptected_val)) in
     ///     interval_map.iter().zip(expected.iter())
@@ -126,12 +128,12 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
     ///     assert_eq!(val, exptected_val);
     /// }
     /// ```
-    pub fn iter(&self) -> std::collections::btree_map::Iter<IntegerInterval, T> {
+    pub fn iter(&self) -> std::collections::btree_map::Iter<I64Interval, T> {
         self.map.iter()
     }
 
     /// Converts into the underlying `BTreeMap`
-    pub fn into_map(self) -> BTreeMap<IntegerInterval, T> {
+    pub fn into_map(self) -> BTreeMap<I64Interval, T> {
         self.map
     }
 
@@ -140,15 +142,15 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
     ///
     /// # Example
     /// ```
-    /// use analytic::partition::integer_interval_map::{IntegerInterval, IntegerIntervalMap};
+    /// use analytic::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
     ///
     /// let mut interval_map = IntegerIntervalMap::new();
-    /// interval_map.aggregate(IntegerInterval::new(2, 5), 1);
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(2, 5)), Some(1));
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(2, 4)), None);
-    /// assert_eq!(interval_map.get(&IntegerInterval::new(2, 6)), None);
+    /// interval_map.aggregate(I64Interval::new(2, 5), 1);
+    /// assert_eq!(interval_map.get(&I64Interval::new(2, 5)), Some(1));
+    /// assert_eq!(interval_map.get(&I64Interval::new(2, 4)), None);
+    /// assert_eq!(interval_map.get(&I64Interval::new(2, 6)), None);
     /// ```
-    pub fn get(&self, key: &IntegerInterval) -> Option<T> {
+    pub fn get(&self, key: &I64Interval) -> Option<T> {
         self.map.get(key).map(|&k| k)
     }
 }

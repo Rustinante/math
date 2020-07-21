@@ -1,3 +1,5 @@
+//! # General traits
+
 pub mod trait_impl;
 
 pub trait Collecting<E> {

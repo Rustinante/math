@@ -1,4 +1,4 @@
-//! A Linear Algebra Library
+//! # A Linear Algebra Library
 
 use num::ToPrimitive;
 use std::{collections::HashSet, iter::FromIterator};

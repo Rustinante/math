@@ -1,3 +1,5 @@
+//! # Basic statistical computations
+
 pub mod correlation;
 
 use num::traits::ToPrimitive;
@@ -157,7 +159,8 @@ where
     variance(element_iterator, ddof).sqrt()
 }
 
-/// `percentile_ratio` is percentile / 100
+/// `percentile_ratio` is `percentile / 100`,
+/// e.g. the 90-th percentile corresponds to a `percentile_ratio` of `0.9`.
 pub fn percentile_by<T, F>(
     mut numbers: Vec<T>,
     percentile_ratio: f64,

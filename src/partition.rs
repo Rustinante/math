@@ -1,4 +1,4 @@
-//! Models a collection of disjoint integer intervals
+//! # Modeling a collection of disjoint integer intervals
 
 pub mod integer_interval_map;
 pub mod integer_partitions;

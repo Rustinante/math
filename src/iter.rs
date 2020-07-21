@@ -1,7 +1,8 @@
+//! # Iterator adapters
+
 use crate::{
-    partition::ordered_interval_partitions::OrderedIntervalPartitions,
-    set::{contiguous_integer_set::ContiguousIntegerSet, traits::Refineable},
-    traits::SubsetIndexable,
+    interval::IntInterval, partition::ordered_interval_partitions::OrderedIntervalPartitions,
+    set::traits::Refineable, traits::SubsetIndexable,
 };
 use num::Integer;
 use std::{
@@ -10,6 +11,8 @@ use std::{
     hash::Hash,
     vec::IntoIter,
 };
+
+pub mod binned_interval_iter;
 
 /// `K` is the key type
 /// `M` is the map type that maps keys of type `K` to values
@@ -177,57 +180,48 @@ where
     maps: Vec<&'a M>,
 }
 
-pub type RefinedInterval<T> = ContiguousIntegerSet<T>;
-
 impl<V, T: Integer + Copy + Hash>
-    CommonRefinementZip<
-        OrderedIntervalPartitions<T>,
-        RefinedInterval<T>,
-        HashMap<RefinedInterval<T>, V>,
-    > for HashMap<RefinedInterval<T>, V>
+    CommonRefinementZip<OrderedIntervalPartitions<T>, IntInterval<T>, HashMap<IntInterval<T>, V>>
+    for HashMap<IntInterval<T>, V>
 {
     /// ```
     /// use analytic::{
-    ///     interval::traits::Interval,
-    ///     iter::{CommonRefinementZip, RefinedInterval},
+    ///     interval::{traits::Interval, IntInterval},
+    ///     iter::CommonRefinementZip,
     /// };
     /// use std::collections::HashMap;
     ///
-    /// let m1: HashMap<RefinedInterval<usize>, i32> = vec![
-    ///     (RefinedInterval::new(0, 5), 5),
-    ///     (RefinedInterval::new(8, 10), 2),
-    /// ]
-    /// .into_iter()
-    /// .collect();
+    /// let m1: HashMap<IntInterval<usize>, i32> =
+    ///     vec![(IntInterval::new(0, 5), 5), (IntInterval::new(8, 10), 2)]
+    ///         .into_iter()
+    ///         .collect();
     ///
-    /// let m2: HashMap<RefinedInterval<usize>, i32> = vec![
-    ///     (RefinedInterval::new(2, 4), 8),
-    ///     (RefinedInterval::new(12, 13), 9),
-    /// ]
-    /// .into_iter()
-    /// .collect();
+    /// let m2: HashMap<IntInterval<usize>, i32> =
+    ///     vec![(IntInterval::new(2, 4), 8), (IntInterval::new(12, 13), 9)]
+    ///         .into_iter()
+    ///         .collect();
     ///
     /// let mut iter = m1
     ///     .common_refinement_zip(&m2, |a, b| a.get_start().cmp(&b.get_start()))
     ///     .into_iter();
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(0, 1), vec![Some(&5), None])),
+    ///     Some((IntInterval::new(0, 1), vec![Some(&5), None])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(2, 4), vec![Some(&5), Some(&8)])),
+    ///     Some((IntInterval::new(2, 4), vec![Some(&5), Some(&8)])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(5, 5), vec![Some(&5), None])),
+    ///     Some((IntInterval::new(5, 5), vec![Some(&5), None])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(8, 10), vec![Some(&2), None])),
+    ///     Some((IntInterval::new(8, 10), vec![Some(&2), None])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(12, 13), vec![None, Some(&9)])),
+    ///     Some((IntInterval::new(12, 13), vec![None, Some(&9)])),
     ///     iter.next()
     /// );
     /// assert_eq!(None, iter.next());
@@ -236,13 +230,13 @@ impl<V, T: Integer + Copy + Hash>
         &'a self,
         other: &'a Self,
         mut sort_fn: F,
-    ) -> CommonRefinementZipped<'a, OrderedIntervalPartitions<T>, RefinedInterval<T>, Self>
+    ) -> CommonRefinementZipped<'a, OrderedIntervalPartitions<T>, IntInterval<T>, Self>
     where
-        F: FnMut(&RefinedInterval<T>, &RefinedInterval<T>) -> Ordering, {
-        let mut keys_1: Vec<RefinedInterval<T>> = self.keys().map(|i| *i).collect();
+        F: FnMut(&IntInterval<T>, &IntInterval<T>) -> Ordering, {
+        let mut keys_1: Vec<IntInterval<T>> = self.keys().map(|i| *i).collect();
         keys_1.sort_by(|a, b| sort_fn(a, b));
 
-        let mut keys_2: Vec<RefinedInterval<T>> = other.keys().map(|i| *i).collect();
+        let mut keys_2: Vec<IntInterval<T>> = other.keys().map(|i| *i).collect();
         keys_2.sort_by(|a, b| sort_fn(a, b));
 
         let p1 = OrderedIntervalPartitions::from_vec_with_trusted_order(keys_1.clone());
@@ -262,41 +256,37 @@ impl<'a, V, T: Integer + Copy + Hash>
     IntoCommonRefinementZip<
         'a,
         OrderedIntervalPartitions<T>,
-        RefinedInterval<T>,
-        HashMap<RefinedInterval<T>, V>,
+        IntInterval<T>,
+        HashMap<IntInterval<T>, V>,
     >
     for CommonRefinementZipped<
         'a,
         OrderedIntervalPartitions<T>,
-        RefinedInterval<T>,
-        HashMap<RefinedInterval<T>, V>,
+        IntInterval<T>,
+        HashMap<IntInterval<T>, V>,
     >
 {
     /// ```
     /// use analytic::{
-    ///     interval::traits::Interval,
-    ///     iter::{CommonRefinementZip, IntoCommonRefinementZip, RefinedInterval},
+    ///     interval::{traits::Interval, IntInterval},
+    ///     iter::{CommonRefinementZip, IntoCommonRefinementZip},
     /// };
     /// use std::collections::HashMap;
     ///
-    /// let m1: HashMap<RefinedInterval<usize>, i32> = vec![
-    ///     (RefinedInterval::new(0, 10), 5),
-    ///     (RefinedInterval::new(16, 17), 21),
-    /// ]
-    /// .into_iter()
-    /// .collect();
+    /// let m1: HashMap<IntInterval<usize>, i32> =
+    ///     vec![(IntInterval::new(0, 10), 5), (IntInterval::new(16, 17), 21)]
+    ///         .into_iter()
+    ///         .collect();
     ///
-    /// let m2: HashMap<RefinedInterval<usize>, i32> = vec![
-    ///     (RefinedInterval::new(2, 3), 8),
-    ///     (RefinedInterval::new(12, 20), 9),
-    /// ]
-    /// .into_iter()
-    /// .collect();
+    /// let m2: HashMap<IntInterval<usize>, i32> =
+    ///     vec![(IntInterval::new(2, 3), 8), (IntInterval::new(12, 20), 9)]
+    ///         .into_iter()
+    ///         .collect();
     ///
-    /// let m3: HashMap<RefinedInterval<usize>, i32> = vec![
-    ///     (RefinedInterval::new(2, 4), 7),
-    ///     (RefinedInterval::new(9, 10), -1),
-    ///     (RefinedInterval::new(15, 20), 0),
+    /// let m3: HashMap<IntInterval<usize>, i32> = vec![
+    ///     (IntInterval::new(2, 4), 7),
+    ///     (IntInterval::new(9, 10), -1),
+    ///     (IntInterval::new(15, 20), 0),
     /// ]
     /// .into_iter()
     /// .collect();
@@ -307,39 +297,35 @@ impl<'a, V, T: Integer + Copy + Hash>
     ///     .into_iter();
     ///
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(0, 1), vec![Some(&5), None, None])),
+    ///     Some((IntInterval::new(0, 1), vec![Some(&5), None, None])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(2, 3), vec![
-    ///         Some(&5),
-    ///         Some(&8),
-    ///         Some(&7)
-    ///     ])),
+    ///     Some((IntInterval::new(2, 3), vec![Some(&5), Some(&8), Some(&7)])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(4, 4), vec![Some(&5), None, Some(&7)])),
+    ///     Some((IntInterval::new(4, 4), vec![Some(&5), None, Some(&7)])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(5, 8), vec![Some(&5), None, None])),
+    ///     Some((IntInterval::new(5, 8), vec![Some(&5), None, None])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(9, 10), vec![Some(&5), None, Some(&-1)])),
+    ///     Some((IntInterval::new(9, 10), vec![Some(&5), None, Some(&-1)])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(12, 14), vec![None, Some(&9), None])),
+    ///     Some((IntInterval::new(12, 14), vec![None, Some(&9), None])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(15, 15), vec![None, Some(&9), Some(&0)])),
+    ///     Some((IntInterval::new(15, 15), vec![None, Some(&9), Some(&0)])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(16, 17), vec![
+    ///     Some((IntInterval::new(16, 17), vec![
     ///         Some(&21),
     ///         Some(&9),
     ///         Some(&0)
@@ -347,24 +333,24 @@ impl<'a, V, T: Integer + Copy + Hash>
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((RefinedInterval::new(18, 20), vec![None, Some(&9), Some(&0)])),
+    ///     Some((IntInterval::new(18, 20), vec![None, Some(&9), Some(&0)])),
     ///     iter.next()
     /// );
     /// assert_eq!(None, iter.next());
     /// ```
     fn into_common_refinement_zip<F>(
         self,
-        other: &'a HashMap<RefinedInterval<T>, V>,
+        other: &'a HashMap<IntInterval<T>, V>,
         mut sort_fn: F,
     ) -> CommonRefinementZipped<
         'a,
         OrderedIntervalPartitions<T>,
-        RefinedInterval<T>,
-        HashMap<RefinedInterval<T>, V>,
+        IntInterval<T>,
+        HashMap<IntInterval<T>, V>,
     >
     where
-        F: FnMut(&RefinedInterval<T>, &RefinedInterval<T>) -> Ordering, {
-        let mut other_keys: Vec<RefinedInterval<T>> = other.keys().map(|i| *i).collect();
+        F: FnMut(&IntInterval<T>, &IntInterval<T>) -> Ordering, {
+        let mut other_keys: Vec<IntInterval<T>> = other.keys().map(|i| *i).collect();
         other_keys.sort_by(|a, b| sort_fn(a, b));
 
         let other_partitions =
@@ -392,23 +378,23 @@ impl<'a, V, T: Integer + Copy + Hash> IntoIterator
     for CommonRefinementZipped<
         'a,
         OrderedIntervalPartitions<T>,
-        RefinedInterval<T>,
-        HashMap<RefinedInterval<T>, V>,
+        IntInterval<T>,
+        HashMap<IntInterval<T>, V>,
     >
 {
     type IntoIter = CommonRefinementZipIter<
         'a,
         OrderedIntervalPartitions<T>,
-        RefinedInterval<T>,
-        HashMap<RefinedInterval<T>, V>,
-        IntoIter<RefinedInterval<T>>,
+        IntInterval<T>,
+        HashMap<IntInterval<T>, V>,
+        IntoIter<IntInterval<T>>,
     >;
     type Item = <CommonRefinementZipIter<
         'a,
         OrderedIntervalPartitions<T>,
-        RefinedInterval<T>,
-        HashMap<RefinedInterval<T>, V>,
-        IntoIter<RefinedInterval<T>>,
+        IntInterval<T>,
+        HashMap<IntInterval<T>, V>,
+        IntoIter<IntInterval<T>>,
     > as Iterator>::Item;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -424,12 +410,12 @@ impl<'a, V, T: Integer + Copy + Hash> Iterator
     for CommonRefinementZipIter<
         'a,
         OrderedIntervalPartitions<T>,
-        RefinedInterval<T>,
-        HashMap<RefinedInterval<T>, V>,
-        IntoIter<RefinedInterval<T>>,
+        IntInterval<T>,
+        HashMap<IntInterval<T>, V>,
+        IntoIter<IntInterval<T>>,
     >
 {
-    type Item = (RefinedInterval<T>, Vec<Option<&'a V>>);
+    type Item = (IntInterval<T>, Vec<Option<&'a V>>);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.refined_keys_iter.next() {

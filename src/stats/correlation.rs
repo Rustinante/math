@@ -1,7 +1,7 @@
 use crate::stats::{kahan_sigma, kahan_sigma_return_counter};
 use num::ToPrimitive;
 
-/// The weights are of type `T`, while the values are of type `T`.
+/// The weights and values are of type `T`.
 pub fn weighted_correlation<'a, T, I: Iterator<Item = &'a T>, F1, F2, F3>(
     a_iter: F1,
     b_iter: F2,

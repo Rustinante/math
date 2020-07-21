@@ -11,7 +11,7 @@ use std::{
 
 pub type IntegerIntervalRefinement<E> = Vec<ContiguousIntegerSet<E>>;
 
-/// Represents the set of integers in [start, end].
+/// Represents the set of integers in `[start, end]`.
 /// `Ord` is automatically derived so that comparison is done lexicographically
 /// with `start` first and `end` second.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
@@ -21,7 +21,8 @@ pub struct ContiguousIntegerSet<E: Integer + Copy> {
 }
 
 impl<E: Integer + Copy> ContiguousIntegerSet<E> {
-    pub fn new(start: E, end: E) -> ContiguousIntegerSet<E> {
+    /// Creates an integer set `[start, end]`, where the `end` is inclusive.
+    pub fn new(start: E, end: E) -> Self {
         ContiguousIntegerSet {
             start,
             end,

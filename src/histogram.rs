@@ -1,4 +1,4 @@
-//! A histogram consisting of a fixed number of intervals within a fixed range.
+//! # A histogram consisting of a fixed number of intervals within a fixed range
 
 use std::{cmp, fmt, ops::Deref};
 

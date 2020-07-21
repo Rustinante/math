@@ -1,4 +1,4 @@
-//! Models a collection of disjoint integer intervals.
+//! Modeling a collection of disjoint integer intervals.
 
 use crate::set::{
     contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,

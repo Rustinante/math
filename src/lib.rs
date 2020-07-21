@@ -1,5 +1,4 @@
-//! Provides a layer of abstraction over certain mathematical constructs
-//! through trait definitions and concrete implementations.
+//! # Modeling mathematical constructs and their associated operations.
 
 #![feature(drain_filter)]
 
