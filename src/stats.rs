@@ -18,7 +18,6 @@ pub fn n_choose_2(n: usize) -> usize {
 
 pub fn kahan_sigma<E, I: Iterator<Item = E>, F>(element_iterator: I, op: F) -> f64
 where
-    E: Copy,
     F: Fn(E) -> f64, {
     // Kahan summation algorithm
     let mut sum = 0f64;
@@ -34,7 +33,6 @@ where
 
 pub fn kahan_sigma_f32<E, I: Iterator<Item = E>, F>(element_iterator: I, op: F) -> f32
 where
-    E: Copy,
     F: Fn(E) -> f32, {
     // Kahan summation algorithm
     let mut sum = 0f32;
@@ -53,7 +51,6 @@ pub fn kahan_sigma_return_counter<E, I: Iterator<Item = E>, F>(
     op: F,
 ) -> (f64, usize)
 where
-    E: Copy,
     F: Fn(E) -> f64, {
     let mut count = 0usize;
     // Kahan summation algorithm

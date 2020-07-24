@@ -13,6 +13,7 @@ use std::{
 };
 
 pub mod binned_interval_iter;
+pub mod flat_zip;
 
 /// `K` is the key type
 /// `M` is the map type that maps keys of type `K` to values
