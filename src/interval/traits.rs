@@ -1,24 +1,27 @@
+use crate::set::traits::Set;
 use num::Num;
 
 /// A one-dimensional interval with a start and an end.
 /// Whether or not the start and end elements are included in the interval depends
 /// on the actual implementor type
-pub trait Interval {
-    type Element: Num + Copy;
+pub trait Interval<T>: Set<T>
+where
+    T: Num + Copy, {
+    fn from_boundaries(start: T, end_inclusive: T) -> Self;
 
-    fn get_start(&self) -> Self::Element;
+    fn get_start(&self) -> T;
 
-    fn get_end(&self) -> Self::Element;
+    fn get_end(&self) -> T;
 
-    fn length(&self) -> Self::Element;
+    fn length(&self) -> T;
 }
 
-pub trait Coalesce<T>: std::marker::Sized {
+pub trait Coalesce<T>: Sized {
     fn coalesce_with(&self, other: &T) -> Option<Self>;
 }
 
 /// implementors are container types that should be able to coalesce the contained intervals
-pub trait CoalesceIntervals<I: Interval<Element=E>, E: Num + Copy>: std::marker::Sized {
+pub trait CoalesceIntervals<I: Interval<E>, E: Num + Copy>: Sized {
     fn to_coalesced_intervals(&self) -> Vec<I>;
 
     fn coalesce_intervals_inplace(&mut self);

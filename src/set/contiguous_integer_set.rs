@@ -47,20 +47,23 @@ impl<E: Integer + Copy> ContiguousIntegerSet<E> {
     }
 }
 
-impl<E: Integer + Copy> Set<E, Option<ContiguousIntegerSet<E>>> for ContiguousIntegerSet<E> {
+impl<E: Integer + Copy> Set<E> for ContiguousIntegerSet<E> {
     #[inline]
     fn is_empty(&self) -> bool {
         self.start > self.end
     }
 
     #[inline]
-    fn contains(&self, item: E) -> bool {
+    fn contains(&self, item: &E) -> bool {
+        let item = *item;
         item >= self.start && item <= self.end
     }
 }
 
-impl<E: Integer + Copy> Interval for ContiguousIntegerSet<E> {
-    type Element = E;
+impl<E: Integer + Copy> Interval<E> for ContiguousIntegerSet<E> {
+    fn from_boundaries(start: E, end_inclusive: E) -> Self {
+        ContiguousIntegerSet::new(start, end_inclusive)
+    }
 
     #[inline]
     fn get_start(&self) -> E {
@@ -93,6 +96,10 @@ impl<E: Integer + Copy> Intersect<&ContiguousIntegerSet<E>, Option<ContiguousInt
                 min(self.end, other.end),
             ))
         }
+    }
+
+    fn has_non_empty_intersection_with(&self, other: &ContiguousIntegerSet<E>) -> bool {
+        self.intersect(other).is_some()
     }
 }
 
@@ -250,7 +257,7 @@ impl<E: Integer + Copy> Iterator for ContiguousIntegerSetIter<E> {
 
 #[cfg(test)]
 mod tests {
-    use crate::set::contiguous_integer_set::ContiguousIntegerSet;
+    use crate::set::{contiguous_integer_set::ContiguousIntegerSet, traits::Intersect};
 
     #[test]
     fn test_ord() {
@@ -267,5 +274,19 @@ mod tests {
         assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 8));
         assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 5));
         assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 3));
+    }
+
+    #[test]
+    fn test_intersect() {
+        let s1 = ContiguousIntegerSet::new(2, 5);
+        let s2 = ContiguousIntegerSet::new(2, 2);
+        let s3 = ContiguousIntegerSet::new(4, 8);
+        let s4 = ContiguousIntegerSet::new(-3, -1);
+        assert_eq!(s1.intersect(&s2), Some(ContiguousIntegerSet::new(2, 2)));
+        assert_eq!(s1.intersect(&s3), Some(ContiguousIntegerSet::new(4, 5)));
+        assert_eq!(s1.intersect(&s4), None);
+        assert!(s1.has_non_empty_intersection_with(&s2));
+        assert!(s1.has_non_empty_intersection_with(&s3));
+        assert!(!s1.has_non_empty_intersection_with(&s4));
     }
 }

@@ -14,8 +14,8 @@ pub trait Slicing<I, O> {
     fn slice(self, input: I) -> O;
 }
 
-pub trait SubsetIndexable<S> {
-    fn get_set_containing(&self, subset: &S) -> Option<S>;
+pub trait SubsetIndexable<S, Output> {
+    fn get_set_containing(&self, subset: &S) -> Option<Output>;
 }
 
 pub trait ToIterator<'s, I: Iterator<Item = R>, R> {

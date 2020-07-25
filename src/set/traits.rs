@@ -1,11 +1,13 @@
-pub trait Set<E, R> {
+pub trait Set<E> {
     fn is_empty(&self) -> bool;
 
-    fn contains(&self, element: E) -> bool;
+    fn contains(&self, element: &E) -> bool;
 }
 
 pub trait Intersect<S, O> {
     fn intersect(&self, other: S) -> O;
+
+    fn has_non_empty_intersection_with(&self, other: S) -> bool;
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]

@@ -2,7 +2,7 @@ use num::Integer;
 
 use crate::interval::traits::{Coalesce, CoalesceIntervals, Interval};
 
-impl<I: Coalesce<I> + Interval<Element=E> + Clone, E: Integer + Copy> CoalesceIntervals<I, E> for Vec<I> {
+impl<I: Coalesce<I> + Interval<E> + Clone, E: Integer + Copy> CoalesceIntervals<I, E> for Vec<I> {
     fn to_coalesced_intervals(&self) -> Vec<I> {
         let mut intervals: Vec<I> = self.to_vec();
         intervals.coalesce_intervals_inplace();

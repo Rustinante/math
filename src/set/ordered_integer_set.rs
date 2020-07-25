@@ -181,26 +181,27 @@ impl<E: Integer + Copy + ToPrimitive> From<Vec<ContiguousIntegerSet<E>>> for Ord
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> Set<E, OrderedIntegerSet<E>> for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> Set<E> for OrderedIntegerSet<E> {
     #[inline]
     fn is_empty(&self) -> bool {
         self.to_non_empty_intervals().intervals.is_empty()
     }
 
-    fn contains(&self, item: E) -> bool {
+    fn contains(&self, item: &E) -> bool {
+        let item = *item;
         if let Some(first) = self.intervals.first() {
-            if first.contains(item) {
+            if first.contains(&item) {
                 return true;
             }
         }
         if let Some(last) = self.intervals.last() {
-            if last.contains(item) {
+            if last.contains(&item) {
                 return true;
             }
         }
         self.intervals
             .iter()
-            .filter(|&&interval| interval.contains(item))
+            .filter(|&&interval| interval.contains(&item))
             .count()
             > 0
     }
@@ -233,6 +234,10 @@ where
         }
         OrderedIntegerSet::from_contiguous_integer_sets(intersection)
     }
+
+    fn has_non_empty_intersection_with(&self, other: &OrderedIntegerSet<E>) -> bool {
+        !self.intersect(other).is_empty()
+    }
 }
 
 impl<E> Intersect<&ContiguousIntegerSet<E>, OrderedIntegerSet<E>> for OrderedIntegerSet<E>
@@ -242,6 +247,10 @@ where
     #[inline]
     fn intersect(&self, other: &ContiguousIntegerSet<E>) -> OrderedIntegerSet<E> {
         other.intersect(self)
+    }
+
+    fn has_non_empty_intersection_with(&self, other: &ContiguousIntegerSet<E>) -> bool {
+        !self.intersect(other).is_empty()
     }
 }
 
@@ -257,6 +266,10 @@ impl<E: Integer + Copy + ToPrimitive> Intersect<&OrderedIntegerSet<E>, OrderedIn
             ]);
             s.intersect(other)
         }
+    }
+
+    fn has_non_empty_intersection_with(&self, other: &OrderedIntegerSet<E>) -> bool {
+        !self.intersect(other).is_empty()
     }
 }
 

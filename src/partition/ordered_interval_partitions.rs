@@ -95,7 +95,7 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntervalPartitions<E> {
     }
 }
 
-impl<E: Integer + Copy + Hash> SubsetIndexable<ContiguousIntegerSet<E>>
+impl<E: Integer + Copy + Hash> SubsetIndexable<ContiguousIntegerSet<E>, ContiguousIntegerSet<E>>
     for OrderedIntervalPartitions<E>
 {
     #[inline]
