@@ -116,8 +116,8 @@ impl DoubleEndedIterator for IntegerPartitionIter {
 }
 
 impl<'a> IntoParallelIterator for IntegerPartitionIter {
-    type Iter = IntegerPartitionParallelIter;
     type Item = <IntegerPartitionParallelIter as ParallelIterator>::Item;
+    type Iter = IntegerPartitionParallelIter;
 
     fn into_par_iter(self) -> Self::Iter {
         IntegerPartitionParallelIter {
@@ -169,8 +169,8 @@ struct IntegerPartitionIterProducer {
 }
 
 impl Producer for IntegerPartitionIterProducer {
-    type Item = <IntegerPartitionIter as Iterator>::Item;
     type IntoIter = IntegerPartitionIter;
+    type Item = <IntegerPartitionIter as Iterator>::Item;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {

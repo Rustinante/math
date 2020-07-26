@@ -1,5 +1,4 @@
-use std::ops::Deref;
-use std::slice::Iter;
+use std::{ops::Deref, slice::Iter};
 
 use crate::sample::Sample;
 
