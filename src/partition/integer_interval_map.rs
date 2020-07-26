@@ -2,7 +2,6 @@
 
 use crate::{
     interval::{traits::Interval, I64Interval},
-    iter::{CommonRefinementZip, CommonRefinementZipped},
     set::{
         contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
         traits::Intersect,
@@ -163,94 +162,14 @@ impl<T: Copy + Num + Debug> Default for IntegerIntervalMap<T> {
     }
 }
 
-type IntType = i64;
-//
-// impl<T: Integer + Copy + Hash>
-//     CommonRefinementZip<OrderedIntervalPartitions<IntType>, I64Interval, Self>
-//     for IntegerIntervalMap<T>
-// {
-//     fn common_refinement_zip<'a, F>(
-//         &'a self,
-//         other: &'a Self,
-//         _: F,
-//     ) -> CommonRefinementZipped<'a, OrderedIntervalPartitions<i64>, I64Interval, Self> {
-//         let keys_1: Vec<I64Interval> = self.iter().map(|(&key, _)| key).collect();
-//         let keys_2: Vec<I64Interval> = self.iter().map(|(&key, _)| key).collect();
-//
-//         let p1 = OrderedIntervalPartitions::from_vec_with_trusted_order(keys_1);
-//         let p2 = OrderedIntervalPartitions::from_vec_with_trusted_order(keys_2);
-//
-//         let refined_keys = p1.get_common_refinement(&p2).into_vec();
-//
-//         CommonRefinementZipped {
-//             keys_list: vec![p1, p2],
-//             refined_keys,
-//             maps: vec![&self, &other],
-//         }
-//     }
-// }
+impl<T> IntoIterator for IntegerIntervalMap<T> {
+    type IntoIter = <BTreeMap<I64Interval, T> as IntoIterator>::IntoIter;
+    type Item = <BTreeMap<I64Interval, T> as IntoIterator>::Item;
 
-// impl<'a, T: Integer + Copy + Hash> IntoIterator
-//     for CommonRefinementZipped<
-//         'a,
-//         OrderedIntervalPartitions<IntType>,
-//         I64Interval,
-//         IntegerIntervalMap<T>,
-//     >
-// {
-//     type IntoIter = CommonRefinementZipIter<
-//         'a,
-//         OrderedIntervalPartitions<T>,
-//         I64Interval,
-//         IntegerIntervalMap<T>,
-//         IntoIter<I64Interval>,
-//     >;
-//     type Item = <CommonRefinementZipIter<
-//         'a,
-//         OrderedIntervalPartitions<T>,
-//         I64Interval,
-//         IntegerIntervalMap<T>,
-//         IntoIter<I64Interval>,
-//     > as Iterator>::Item;
-//
-//     fn into_iter(self) -> Self::IntoIter {
-//         CommonRefinementZipIter {
-//             refined_keys_iter: self.refined_keys.into_iter(),
-//             partitions_list: self.keys_list,
-//             maps: self.maps,
-//         }
-//     }
-// }
-//
-// impl<'a, T: Copy + Num> Iterator
-//     for CommonRefinementZipIter<
-//         'a,
-//         OrderedIntervalPartitions<IntType>,
-//         I64Interval,
-//         IntegerIntervalMap<T>,
-//         IntoIter<I64Interval>,
-//     >
-// {
-//     type Item = (I64Interval, Vec<Option<T>>);
-//
-//     fn next(&mut self) -> Option<Self::Item> {
-//         match self.refined_keys_iter.next() {
-//             None => None,
-//             Some(k) => {
-//                 let mapped: Vec<Option<T>> = self
-//                     .partitions_list
-//                     .iter()
-//                     .zip(self.maps.iter())
-//                     .map(|(partitions, &m)| match partitions.get_set_containing(&k) {
-//                         None => None,
-//                         Some(p) => Some(m.get(&p).unwrap()),
-//                     })
-//                     .collect();
-//                 Some((k, mapped))
-//             }
-//         }
-//     }
-// }
+    fn into_iter(self) -> Self::IntoIter {
+        self.map.into_iter()
+    }
+}
 
 impl<T> SubsetIndexable<I64Interval, I64Interval> for IntegerIntervalMap<T> {
     fn get_set_containing(&self, subset: &I64Interval) -> Option<I64Interval> {
@@ -272,27 +191,28 @@ impl<T> SubsetIndexable<I64Interval, I64Interval> for IntegerIntervalMap<T> {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::{
-//         interval::I64Interval, iter::CommonRefinementZip,
-//         partition::integer_interval_map::IntegerIntervalMap,
-//     };
-//     use std::cmp::Ordering;
-//
-//     #[test]
-//     fn test_common_refinement_zip_integer_interval_map() {
-//         let mut map1 = IntegerIntervalMap::new();
-//         map1.aggregate(I64Interval::new(1, 5), 1);
-//         let mut map2 = IntegerIntervalMap::new();
-//         map2.aggregate(I64Interval::new(3, 6), 2);
-//
-//         let refined: Vec<(I64Interval, Vec<Option<i32>>)> = map1
-//             .common_refinement_zip(&map2, |_, _| Ordering::Less)
-//             .into_iter()
-//             .collect();
-//
-//         let expected = vec![(I64Interval::new(1, 2), vec![Some(&1), None])];
-//         assert_eq!(refined, expected);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use crate::{
+        interval::I64Interval, iter::CommonRefinementZip,
+        partition::integer_interval_map::IntegerIntervalMap,
+    };
+
+    #[test]
+    fn test_common_refinement_zip_integer_interval_map() {
+        let mut map1 = IntegerIntervalMap::new();
+        map1.aggregate(I64Interval::new(1, 5), 1);
+        let mut map2 = IntegerIntervalMap::new();
+        map2.aggregate(I64Interval::new(3, 6), 2);
+
+        let refined: Vec<(I64Interval, Vec<Option<i32>>)> =
+            map1.iter().common_refinement_zip(map2.iter()).collect();
+
+        let expected = vec![
+            (I64Interval::new(1, 2), vec![Some(1), None]),
+            (I64Interval::new(3, 5), vec![Some(1), Some(2)]),
+            (I64Interval::new(6, 6), vec![None, Some(2)]),
+        ];
+        assert_eq!(refined, expected);
+    }
+}

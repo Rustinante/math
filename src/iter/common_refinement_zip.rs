@@ -9,21 +9,20 @@ use crate::{
 use num::{Integer, Num, ToPrimitive};
 use std::{
     collections::BTreeSet,
-    hash::Hash,
     marker::{PhantomData, Sized},
 };
 
-pub trait CommonRefinementZip<'a, B, X, P, V>
+pub trait CommonRefinementZip<B, X, P, V>
 where
     B: Copy + Num + Ord,
     Self: Iterator<Item = X> + Sized,
-    P: 'a + Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>, {
-    fn extract_interval_value(item: &<Self as Iterator>::Item) -> (&'a P, &'a V);
+    P: Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>, {
+    fn extract_interval_value(item: <Self as Iterator>::Item) -> (P, V);
 
     fn common_refinement_zip(
         mut self,
         mut other: Self,
-    ) -> CommonRefinementZipped<'a, B, Self, X, P, V> {
+    ) -> CommonRefinementZipped<B, Self, X, P, V> {
         let mut intervals = Vec::new();
         let mut values = Vec::new();
         match self.next() {
@@ -33,8 +32,8 @@ where
             }
             Some(x) => {
                 let (interval, value) =
-                    <Self as CommonRefinementZip<'a, B, X, P, V>>::extract_interval_value(&x);
-                intervals.push(Some(interval.clone()));
+                    <Self as CommonRefinementZip<B, X, P, V>>::extract_interval_value(x);
+                intervals.push(Some(interval));
                 values.push(Some(value));
             }
         }
@@ -45,8 +44,8 @@ where
             }
             Some(x) => {
                 let (interval, value) =
-                    <Self as CommonRefinementZip<'a, B, X, P, V>>::extract_interval_value(&x);
-                intervals.push(Some(interval.clone()));
+                    <Self as CommonRefinementZip<B, X, P, V>>::extract_interval_value(x);
+                intervals.push(Some(interval));
                 values.push(Some(value));
             }
         }
@@ -55,7 +54,7 @@ where
             intervals,
             values,
             extractor: Box::new(|x| {
-                <Self as CommonRefinementZip<'a, B, X, P, V>>::extract_interval_value(&x)
+                <Self as CommonRefinementZip<B, X, P, V>>::extract_interval_value(x)
             }),
             phantom: PhantomData,
         }
@@ -82,35 +81,46 @@ where
 ///
 /// let mut iter = m1.iter().common_refinement_zip(m2.iter());
 /// assert_eq!(
-///     Some((IntInterval::new(0, 1), vec![Some(&5), None])),
+///     Some((IntInterval::new(0, 1), vec![Some(5), None])),
 ///     iter.next()
 /// );
 /// assert_eq!(
-///     Some((IntInterval::new(2, 4), vec![Some(&5), Some(&8)])),
+///     Some((IntInterval::new(2, 4), vec![Some(5), Some(8)])),
 ///     iter.next()
 /// );
 /// assert_eq!(
-///     Some((IntInterval::new(5, 5), vec![Some(&5), None])),
+///     Some((IntInterval::new(5, 5), vec![Some(5), None])),
 ///     iter.next()
 /// );
 /// assert_eq!(
-///     Some((IntInterval::new(8, 10), vec![Some(&2), None])),
+///     Some((IntInterval::new(8, 10), vec![Some(2), None])),
 ///     iter.next()
 /// );
 /// assert_eq!(
-///     Some((IntInterval::new(12, 13), vec![None, Some(&9)])),
+///     Some((IntInterval::new(12, 13), vec![None, Some(9)])),
 ///     iter.next()
 /// );
 /// assert_eq!(None, iter.next());
 /// ```
-impl<'a, V, B: Integer + Copy + Hash + ToPrimitive>
-    CommonRefinementZip<'a, B, (&'a IntInterval<B>, &'a V), IntInterval<B>, V>
+impl<'a, V, B: Integer + Copy + ToPrimitive>
+    CommonRefinementZip<B, (&'a IntInterval<B>, &'a V), IntInterval<B>, V>
     for std::collections::btree_map::Iter<'a, IntInterval<B>, V>
 where
     B: 'a,
-    V: 'a,
+    V: 'a + Clone,
 {
-    fn extract_interval_value(item: &<Self as Iterator>::Item) -> (&'a IntInterval<B>, &'a V) {
+    fn extract_interval_value(item: <Self as Iterator>::Item) -> (IntInterval<B>, V) {
+        ((*item.0).clone(), (*item.1).clone())
+    }
+}
+
+impl<'a, V, B: Integer + Copy + ToPrimitive>
+    CommonRefinementZip<B, (IntInterval<B>, V), IntInterval<B>, V>
+    for std::collections::btree_map::IntoIter<IntInterval<B>, V>
+where
+    B: 'a,
+{
+    fn extract_interval_value(item: <Self as Iterator>::Item) -> (IntInterval<B>, V) {
         (item.0, item.1)
     }
 }
@@ -132,25 +142,26 @@ where
 /// * `values`: the values associated with each iterator for the current pass.
 /// * `extractor`: a function that extracts a tuple of (interval, value) from each of the items
 ///   yielded from the iterators.
-pub struct CommonRefinementZipped<'a, B, I, X, P, V>
+pub struct CommonRefinementZipped<B, I, X, P, V>
 where
     B: Copy + Num + Ord,
     I: Iterator<Item = X> + Sized,
-    P: 'a + Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>, {
+    P: Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>, {
     iters: Vec<I>,
     intervals: Vec<Option<P>>,
-    values: Vec<Option<&'a V>>,
-    extractor: Box<dyn Fn(&X) -> (&'a P, &'a V)>,
+    values: Vec<Option<V>>,
+    extractor: Box<dyn Fn(X) -> (P, V)>,
     phantom: PhantomData<B>,
 }
 
-impl<'a, B, I, X, P, V> Iterator for CommonRefinementZipped<'a, B, I, X, P, V>
+impl<B, I, X, P, V> Iterator for CommonRefinementZipped<B, I, X, P, V>
 where
     B: Copy + Num + Ord,
     I: Iterator<Item = X> + Sized,
-    P: 'a + Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>,
+    P: Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>,
+    V: Clone,
 {
-    type Item = (P, Vec<Option<&'a V>>);
+    type Item = (P, Vec<Option<V>>);
 
     fn next(&mut self) -> Option<Self::Item> {
         let starts: BTreeSet<B> = self
@@ -195,7 +206,7 @@ where
             match interval {
                 Some(i) => {
                     if i.has_non_empty_intersection_with(&min_refinement) {
-                        refinement_values.push(*v);
+                        refinement_values.push((*v).clone());
 
                         // subtract the min_refinement from the interval
                         // min_start <= i.get_start() <= min_end <= i.get_end()
@@ -208,8 +219,8 @@ where
                                     *v = None;
                                 }
                                 Some(x) => {
-                                    let (new_interval, new_val) = (self.extractor)(&x);
-                                    *interval = Some(new_interval.clone());
+                                    let (new_interval, new_val) = (self.extractor)(x);
+                                    *interval = Some(new_interval);
                                     *v = Some(new_val);
                                 }
                             }
@@ -229,11 +240,11 @@ where
     }
 }
 
-impl<'a, B, I, X, P, V> CommonRefinementZipped<'a, B, I, X, P, V>
+impl<B, I, X, P, V> CommonRefinementZipped<B, I, X, P, V>
 where
     B: Copy + Num + Ord,
     I: Iterator<Item = X> + Sized,
-    P: 'a + Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>,
+    P: Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>,
 {
     /// ```
     /// use analytic::{
@@ -266,43 +277,39 @@ where
     ///     .common_refinement_flat_zip(m3.iter());
     ///
     /// assert_eq!(
-    ///     Some((IntInterval::new(0, 1), vec![Some(&5), None, None])),
+    ///     Some((IntInterval::new(0, 1), vec![Some(5), None, None])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((IntInterval::new(2, 3), vec![Some(&5), Some(&8), Some(&7)])),
+    ///     Some((IntInterval::new(2, 3), vec![Some(5), Some(8), Some(7)])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((IntInterval::new(4, 4), vec![Some(&5), None, Some(&7)])),
+    ///     Some((IntInterval::new(4, 4), vec![Some(5), None, Some(7)])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((IntInterval::new(5, 8), vec![Some(&5), None, None])),
+    ///     Some((IntInterval::new(5, 8), vec![Some(5), None, None])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((IntInterval::new(9, 10), vec![Some(&5), None, Some(&-1)])),
+    ///     Some((IntInterval::new(9, 10), vec![Some(5), None, Some(-1)])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((IntInterval::new(12, 14), vec![None, Some(&9), None])),
+    ///     Some((IntInterval::new(12, 14), vec![None, Some(9), None])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((IntInterval::new(15, 15), vec![None, Some(&9), Some(&0)])),
+    ///     Some((IntInterval::new(15, 15), vec![None, Some(9), Some(0)])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((IntInterval::new(16, 17), vec![
-    ///         Some(&21),
-    ///         Some(&9),
-    ///         Some(&0)
-    ///     ])),
+    ///     Some((IntInterval::new(16, 17), vec![Some(21), Some(9), Some(0)])),
     ///     iter.next()
     /// );
     /// assert_eq!(
-    ///     Some((IntInterval::new(18, 20), vec![None, Some(&9), Some(&0)])),
+    ///     Some((IntInterval::new(18, 20), vec![None, Some(9), Some(0)])),
     ///     iter.next()
     /// );
     /// assert_eq!(None, iter.next());
@@ -310,7 +317,7 @@ where
     pub fn common_refinement_flat_zip(
         mut self,
         mut other: I,
-    ) -> CommonRefinementZipped<'a, B, I, X, P, V>
+    ) -> CommonRefinementZipped<B, I, X, P, V>
     where
         I: Iterator<Item = X> + Sized, {
         match other.next() {
@@ -319,7 +326,7 @@ where
                 self.values.push(None);
             }
             Some(x) => {
-                let (i, v) = (self.extractor)(&x);
+                let (i, v) = (self.extractor)(x);
                 self.intervals.push(Some(i.clone()));
                 self.values.push(Some(v));
             }
