@@ -4,33 +4,43 @@
 
 use crate::{
     interval::{traits::Interval, I64Interval},
+    iter::CommonRefinementZip,
     set::traits::{Finite, Intersect},
 };
 use num::{FromPrimitive, Num};
 use std::cmp::Ordering;
 
-pub trait IntoBinnedIntervalIter<T, F>: Iterator + Sized {
+/// The value of the associated with `Min` and `Max` are the initial min and max values.
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum AggregateOp {
+    Max,
+    Min,
+    Sum,
+}
+
+pub trait IntoBinnedIntervalIter<V>
+where
+    Self: Iterator + Sized,
+    V: Copy + Num + FromPrimitive + PartialOrd, {
     fn into_binned_interval_iter(
         self,
         bin_size: i64,
         aggregate_op: AggregateOp,
-        interval_value_extractor: F,
-    ) -> BinnedIntervalIter<Self, T, F>
-    where
-        F: Fn(<Self as Iterator>::Item) -> (I64Interval, T);
+        interval_value_extractor: Box<dyn Fn(<Self as Iterator>::Item) -> (I64Interval, V)>,
+    ) -> BinnedIntervalIter<Self, V>;
 }
 
-impl<I, T, F> IntoBinnedIntervalIter<T, F> for I
+impl<I, V> IntoBinnedIntervalIter<V> for I
 where
     I: Iterator,
-    F: Fn(<I as Iterator>::Item) -> (I64Interval, T),
+    V: Copy + Num + FromPrimitive + PartialOrd,
 {
     fn into_binned_interval_iter(
         self,
         bin_size: i64,
         aggregate_op: AggregateOp,
-        interval_value_extractor: F,
-    ) -> BinnedIntervalIter<Self, T, F> {
+        interval_value_extractor: Box<dyn Fn(<I as Iterator>::Item) -> (I64Interval, V)>,
+    ) -> BinnedIntervalIter<Self, V> {
         BinnedIntervalIter::new(self, bin_size, aggregate_op, interval_value_extractor)
     }
 }
@@ -70,9 +80,11 @@ where
 /// assert_eq!(
 ///     interval_map
 ///         .iter()
-///         .into_binned_interval_iter(bin_size, AggregateOp::Sum, |(&interval, &val)| (
-///             interval, val
-///         ))
+///         .into_binned_interval_iter(
+///             bin_size,
+///             AggregateOp::Sum,
+///             Box::new(|(&interval, &val)| (interval, val))
+///         )
 ///         .collect::<Vec<(I64Interval, i32)>>(),
 ///     vec![
 ///         (I64Interval::new(-5, -1), 2),
@@ -84,9 +96,11 @@ where
 /// assert_eq!(
 ///     interval_map
 ///         .iter()
-///         .into_binned_interval_iter(bin_size, AggregateOp::Max, |(&interval, &val)| (
-///             interval, val
-///         ))
+///         .into_binned_interval_iter(
+///             bin_size,
+///             AggregateOp::Max,
+///             Box::new(|(&interval, &val)| (interval, val))
+///         )
 ///         .collect::<Vec<(I64Interval, i32)>>(),
 ///     vec![
 ///         (I64Interval::new(-5, -1), 2),
@@ -98,9 +112,11 @@ where
 /// assert_eq!(
 ///     interval_map
 ///         .iter()
-///         .into_binned_interval_iter(bin_size, AggregateOp::Min, |(&interval, &val)| (
-///             interval, val
-///         ))
+///         .into_binned_interval_iter(
+///             bin_size,
+///             AggregateOp::Min,
+///             Box::new(|(&interval, &val)| (interval, val))
+///         )
 ///         .collect::<Vec<(I64Interval, i32)>>(),
 ///     vec![
 ///         (I64Interval::new(-5, -1), 2),
@@ -110,54 +126,50 @@ where
 ///     ]
 /// );
 /// ```
-#[derive(Clone, Debug)]
-pub struct BinnedIntervalIter<I, T, F> {
+pub struct BinnedIntervalIter<I, V>
+where
+    I: Iterator,
+    V: Copy + Num + FromPrimitive + PartialOrd, {
     iter: I,
     bin_size: i64,
     aggregate_op: AggregateOp,
-    interval_value_extractor: F,
-    current_interval_val: Option<(I64Interval, T)>,
+    iter_item_interval_value_extractor: Box<dyn Fn(<I as Iterator>::Item) -> (I64Interval, V)>,
+    current_interval_val: Option<(I64Interval, V)>,
     current_bin: Option<I64Interval>,
 }
 
-/// The value of the associated with `Min` and `Max` are the initial min and max values.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub enum AggregateOp {
-    Max,
-    Min,
-    Sum,
-}
-
-impl<I, T, F> BinnedIntervalIter<I, T, F> {
+impl<I, V> BinnedIntervalIter<I, V>
+where
+    I: Iterator,
+    V: Copy + Num + FromPrimitive + PartialOrd,
+{
     pub fn new(
         mut iter: I,
         bin_size: i64,
         aggregate_op: AggregateOp,
-        interval_value_extractor: F,
-    ) -> Self
-    where
-        I: Iterator,
-        F: Fn(<I as Iterator>::Item) -> (I64Interval, T), {
+        iter_item_interval_value_extractor: Box<dyn Fn(<I as Iterator>::Item) -> (I64Interval, V)>,
+    ) -> Self {
         assert!(bin_size >= 1, "bin_size must be at least 1");
-        let current_interval_val = iter.next().map(|item| interval_value_extractor(item));
+        let current_interval_val = iter
+            .next()
+            .map(|item| iter_item_interval_value_extractor(item));
         BinnedIntervalIter {
             iter,
             bin_size,
             aggregate_op,
-            interval_value_extractor,
+            iter_item_interval_value_extractor,
             current_interval_val,
             current_bin: None,
         }
     }
 }
 
-impl<I, T, F> Iterator for BinnedIntervalIter<I, T, F>
+impl<I, V> Iterator for BinnedIntervalIter<I, V>
 where
     I: Iterator,
-    T: Copy + Num + FromPrimitive + PartialOrd,
-    F: Fn(<I as Iterator>::Item) -> (I64Interval, T),
+    V: Copy + Num + FromPrimitive + PartialOrd,
 {
-    type Item = (I64Interval, T);
+    type Item = (I64Interval, V);
 
     /// After every iteration, `self.current_bin` can be
     /// * `None`: indicating that the current interval has not been processed at all
@@ -173,7 +185,7 @@ where
         match current_interval {
             None => None,
             Some((mut interval, mut val)) => {
-                let mut aggregate: Option<T> = None;
+                let mut aggregate: Option<V> = None;
 
                 let interval_start = interval.get_start();
 
@@ -218,9 +230,9 @@ where
                             },
                         )),
                         AggregateOp::Sum => Some(
-                            aggregate.unwrap_or(T::zero())
+                            aggregate.unwrap_or(V::zero())
                                 + val
-                                    * T::from_usize(
+                                    * V::from_usize(
                                         self.current_bin
                                             .unwrap()
                                             .intersect(&interval)
@@ -239,7 +251,7 @@ where
                         self.current_interval_val = self
                             .iter
                             .next()
-                            .map(|item| (self.interval_value_extractor)(item));
+                            .map(|item| (self.iter_item_interval_value_extractor)(item));
                         match self.current_interval_val {
                             None => {
                                 break;
@@ -270,11 +282,29 @@ where
     }
 }
 
+type IntType = i64;
+
+impl<I, V> CommonRefinementZip<IntType, (I64Interval, V), I64Interval, V>
+    for BinnedIntervalIter<I, V>
+where
+    I: Iterator,
+    V: Copy + Num + FromPrimitive + PartialOrd,
+{
+    fn get_interval_value_extractor(
+        &self,
+    ) -> Box<dyn Fn(<Self as Iterator>::Item) -> (I64Interval, V)> {
+        Box::new(|item| (item.0, item.1))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
         interval::I64Interval,
-        iter::binned_interval_iter::{AggregateOp, IntoBinnedIntervalIter},
+        iter::{
+            binned_interval_iter::{AggregateOp, IntoBinnedIntervalIter},
+            CommonRefinementZip,
+        },
         partition::integer_interval_map::IntegerIntervalMap,
     };
 
@@ -300,7 +330,11 @@ mod tests {
             ($op:expr) => {
                 interval_map
                     .iter()
-                    .into_binned_interval_iter(bin_size, $op, |(&interval, &val)| (interval, val))
+                    .into_binned_interval_iter(
+                        bin_size,
+                        $op,
+                        Box::new(|(&interval, &val)| (interval, val)),
+                    )
                     .collect::<Vec<(I64Interval, i32)>>()
             };
         }
@@ -361,5 +395,65 @@ mod tests {
             (I64Interval::new(12, 14), -2),
             (I64Interval::new(15, 17), -2),
         ]);
+    }
+
+    #[test]
+    fn test_common_refinement_zip() {
+        let bin_size = 3;
+        let mut map1 = IntegerIntervalMap::new();
+        map1.aggregate(I64Interval::new(-1, 4), 2);
+        map1.aggregate(I64Interval::new(6, 8), 4);
+        map1.aggregate(I64Interval::new(4, 7), 1);
+
+        // interval coordinates           | value
+        // -1 | 0 1 2 | 3 4   |           | +2
+        //    |       |       | 6 7 8     | +4
+        //    |       |   4 5 | 6 7       | +1
+        //---------------------------------
+        //  2 | 2 2 2 | 2 3 1 | 5 5 4 |   | superposed values
+        //  2 || 6    || 6    || 14   ||  | bin sum
+
+        let mut map2 = IntegerIntervalMap::new();
+        map2.aggregate(I64Interval::new(1, 2), -2);
+        map2.aggregate(I64Interval::new(6, 8), 9);
+        // interval coordinates            | value
+        // |  1   2 |       |              | -2
+        // |        |       |  6   7   8   | +9
+        //---------------------------------
+        // | -2  -2 |       |  9   9   9   | superposed values
+        // || -4    ||      || 27          | bin sum
+
+        assert_eq!(
+            map2.iter()
+                .into_binned_interval_iter(
+                    bin_size,
+                    AggregateOp::Sum,
+                    Box::new(|(&interval, &val)| (interval, val))
+                )
+                .collect::<Vec<(I64Interval, i32)>>(),
+            vec![(I64Interval::new(0, 2), -4), (I64Interval::new(6, 8), 27)]
+        );
+
+        let actual: Vec<(I64Interval, Vec<Option<i32>>)> = map1
+            .iter()
+            .into_binned_interval_iter(
+                bin_size,
+                AggregateOp::Sum,
+                Box::new(|(&interval, &val)| (interval, val)),
+            )
+            .common_refinement_zip(map2.iter().into_binned_interval_iter(
+                bin_size,
+                AggregateOp::Sum,
+                Box::new(|(&interval, &val)| (interval, val)),
+            ))
+            .collect();
+
+        let expected = vec![
+            (I64Interval::new(-3, -1), vec![Some(2), None]),
+            (I64Interval::new(0, 2), vec![Some(6), Some(-4)]),
+            (I64Interval::new(3, 5), vec![Some(6), None]),
+            (I64Interval::new(6, 8), vec![Some(14), Some(27)]),
+        ];
+        assert_eq!(actual, expected);
     }
 }

@@ -17,12 +17,13 @@ where
     B: Copy + Num + Ord,
     Self: Iterator<Item = X> + Sized,
     P: Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>, {
-    fn extract_interval_value(item: <Self as Iterator>::Item) -> (P, V);
+    fn get_interval_value_extractor(&self) -> Box<dyn Fn(<Self as Iterator>::Item) -> (P, V)>;
 
     fn common_refinement_zip(
         mut self,
         mut other: Self,
     ) -> CommonRefinementZipped<B, Self, X, P, V> {
+        let extractor = self.get_interval_value_extractor();
         let mut intervals = Vec::new();
         let mut values = Vec::new();
         match self.next() {
@@ -31,8 +32,7 @@ where
                 values.push(None);
             }
             Some(x) => {
-                let (interval, value) =
-                    <Self as CommonRefinementZip<B, X, P, V>>::extract_interval_value(x);
+                let (interval, value) = extractor(x);
                 intervals.push(Some(interval));
                 values.push(Some(value));
             }
@@ -43,8 +43,7 @@ where
                 values.push(None);
             }
             Some(x) => {
-                let (interval, value) =
-                    <Self as CommonRefinementZip<B, X, P, V>>::extract_interval_value(x);
+                let (interval, value) = extractor(x);
                 intervals.push(Some(interval));
                 values.push(Some(value));
             }
@@ -53,9 +52,7 @@ where
             iters: vec![self, other],
             intervals,
             values,
-            extractor: Box::new(|x| {
-                <Self as CommonRefinementZip<B, X, P, V>>::extract_interval_value(x)
-            }),
+            extractor,
             phantom: PhantomData,
         }
     }
@@ -109,8 +106,10 @@ where
     B: 'a,
     V: 'a + Clone,
 {
-    fn extract_interval_value(item: <Self as Iterator>::Item) -> (IntInterval<B>, V) {
-        ((*item.0).clone(), (*item.1).clone())
+    fn get_interval_value_extractor(
+        &self,
+    ) -> Box<dyn Fn(<Self as Iterator>::Item) -> (IntInterval<B>, V)> {
+        Box::new(|item| ((*item.0).clone(), (*item.1).clone()))
     }
 }
 
@@ -120,8 +119,10 @@ impl<'a, V, B: Integer + Copy + ToPrimitive>
 where
     B: 'a,
 {
-    fn extract_interval_value(item: <Self as Iterator>::Item) -> (IntInterval<B>, V) {
-        (item.0, item.1)
+    fn get_interval_value_extractor(
+        &self,
+    ) -> Box<dyn Fn(<Self as Iterator>::Item) -> (IntInterval<B>, V)> {
+        Box::new(|item| (item.0, item.1))
     }
 }
 
