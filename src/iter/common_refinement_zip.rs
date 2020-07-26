@@ -60,7 +60,7 @@ where
 
 /// # Example
 /// ```
-/// use analytic::{
+/// use math::{
 ///     interval::{traits::Interval, IntInterval},
 ///     iter::CommonRefinementZip,
 /// };
@@ -248,7 +248,7 @@ where
     P: Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>,
 {
     /// ```
-    /// use analytic::{
+    /// use math::{
     ///     interval::{traits::Interval, IntInterval},
     ///     iter::CommonRefinementZip,
     /// };

@@ -32,7 +32,7 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
     ///
     /// # Example
     /// ```
-    /// use analytic::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
+    /// use math::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
     ///
     /// //                          | value
     /// // -1 0 1 2 3 4             | +2
@@ -108,7 +108,7 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
 
     /// # Example
     /// ```
-    /// use analytic::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
+    /// use math::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
     ///
     /// let mut interval_map = IntegerIntervalMap::new();
     /// interval_map.aggregate(I64Interval::new(-1, 4), 2);
@@ -143,7 +143,7 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
     ///
     /// # Example
     /// ```
-    /// use analytic::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
+    /// use math::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
     ///
     /// let mut interval_map = IntegerIntervalMap::new();
     /// interval_map.aggregate(I64Interval::new(2, 5), 1);

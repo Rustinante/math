@@ -59,7 +59,7 @@ where
 ///
 /// # Example
 /// ```
-/// use analytic::{
+/// use math::{
 ///     interval::I64Interval,
 ///     iter::binned_interval_iter::{AggregateOp, IntoBinnedIntervalIter},
 ///     partition::integer_interval_map::IntegerIntervalMap,

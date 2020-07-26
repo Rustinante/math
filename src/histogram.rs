@@ -31,7 +31,7 @@ where
     ///
     /// # Example
     /// ```
-    /// use analytic::histogram::Histogram;
+    /// use math::histogram::Histogram;
     ///
     /// let histogram = Histogram::new(&vec![2, -1, 3, 5, 8], 5, 0, 10).unwrap();
     /// assert_eq!(histogram.get_boundaries().len(), 6);
@@ -274,7 +274,7 @@ where
 
 /// An iterator that iterates through the entries of the histogram
 /// ```
-/// use analytic::{histogram::Histogram, traits::ToIterator};
+/// use math::{histogram::Histogram, traits::ToIterator};
 /// let histogram = Histogram::new(&vec![4., 0., 3.5], 2, 0., 7.).unwrap();
 /// let mut iter = histogram.to_iter();
 /// assert_eq!(Some((0., 3.5, 1)), iter.next());

@@ -26,7 +26,7 @@ pub struct UnionZippedIter<'a, K, M, I: Iterator<Item = K>> {
 
 /// Takes the sorted union of the two sets of keys for future iteration
 /// ```
-/// use analytic::iter::UnionZip;
+/// use math::iter::UnionZip;
 /// use std::collections::HashMap;
 /// let m1: HashMap<i32, i32> = vec![(1, 10), (3, 23), (4, 20)].into_iter().collect();
 /// let m2: HashMap<i32, i32> = vec![(0, 4), (1, 20), (4, 20), (9, 29)]

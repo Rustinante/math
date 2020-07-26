@@ -47,7 +47,7 @@ pub type Stride = isize;
 ///
 /// ## Examples
 /// ```
-/// use analytic::tensor::{IntoTensor, ShapableData};
+/// use math::tensor::{IntoTensor, ShapableData};
 ///
 /// let tensor = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].into_tensor([3, 4]);
 /// assert_eq!(tensor.shape().ndim(), 2);
@@ -94,7 +94,7 @@ impl<'a, Dtype> ToView<'a, Dtype> for Tensor<Dtype> {
 ///
 /// ## Examples
 /// ```
-/// use analytic::tensor::{IntoTensor, ShapableData, ToView};
+/// use math::tensor::{IntoTensor, ShapableData, ToView};
 ///
 /// let tensor = vec![1, 2, 3, 4].into_tensor(vec![2, 2]);
 /// let view = tensor.as_shape(vec![4, 1]);

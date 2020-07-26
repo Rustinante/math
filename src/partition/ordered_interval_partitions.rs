@@ -140,7 +140,7 @@ impl<E: Integer + Copy + Hash> OrderedIntervalPartitions<E> {
 impl<E: Integer + Copy> Refineable<OrderedIntervalPartitions<E>> for OrderedIntervalPartitions<E> {
     /// # Example
     /// ```
-    /// use analytic::{
+    /// use math::{
     ///     partition::ordered_interval_partitions::OrderedIntervalPartitions,
     ///     set::{contiguous_integer_set::ContiguousIntegerSet, traits::Refineable},
     /// };
