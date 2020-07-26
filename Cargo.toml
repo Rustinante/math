@@ -1,11 +1,11 @@
 [package]
-name = "analytic"
-version = "0.7.1"
+name = "math"
+version = "0.7.2"
 authors = ["Aaron"]
 edition = "2018"
 license = "Apache-2.0"
-description = "The analytic crate has been renamed to be the math crate https://crates.io/crates/math"
-repository = "https://github.com/Rustinante/analytic"
+description = "A math library"
+repository = "https://github.com/Rustinante/math"
 
 [dependencies]
 log = "0.4.8"
