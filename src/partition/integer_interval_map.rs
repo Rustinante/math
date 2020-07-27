@@ -187,7 +187,7 @@ impl<T> SubsetIndexable<I64Interval, I64Interval> for IntegerIntervalMap<T> {
                 return None;
             }
         }
-        return None;
+        None
     }
 }
 
