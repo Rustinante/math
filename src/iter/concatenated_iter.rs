@@ -4,13 +4,26 @@ pub struct ConcatenatedIter<I: Iterator> {
 }
 
 impl<I: Iterator> ConcatenatedIter<I> {
-    pub fn concat_iter(self, other: I) -> ConcatenatedIter<I> {
+    fn from_iters(iters: Vec<I>) -> Self {
+        ConcatenatedIter {
+            iters,
+            current_iter_index: 0,
+        }
+    }
+
+    pub fn concat_iter(self, other: I) -> Self {
         let mut iters = self.iters;
         iters.push(other);
         ConcatenatedIter {
             iters,
             current_iter_index: self.current_iter_index,
         }
+    }
+}
+
+impl<I: Iterator> From<Vec<I>> for ConcatenatedIter<I> {
+    fn from(iters: Vec<I>) -> Self {
+        Self::from_iters(iters)
     }
 }
 
@@ -44,8 +57,24 @@ impl<I: Iterator + Sized> IntoConcatIter for I {}
 
 #[cfg(test)]
 mod tests {
-    use crate::iter::concatenated_iter::IntoConcatIter;
+    use crate::iter::{concatenated_iter::IntoConcatIter, ConcatenatedIter};
     use std::collections::BTreeMap;
+
+    #[test]
+    fn test_from_iters() {
+        let arr1 = vec![0, 1, 2];
+        let arr2 = vec![3, 4];
+        let arr3 = vec![5, 6];
+        let mut concat_iter = ConcatenatedIter::from(vec![arr1.iter(), arr2.iter(), arr3.iter()]);
+        assert_eq!(concat_iter.next(), Some(&0));
+        assert_eq!(concat_iter.next(), Some(&1));
+        assert_eq!(concat_iter.next(), Some(&2));
+        assert_eq!(concat_iter.next(), Some(&3));
+        assert_eq!(concat_iter.next(), Some(&4));
+        assert_eq!(concat_iter.next(), Some(&5));
+        assert_eq!(concat_iter.next(), Some(&6));
+        assert_eq!(concat_iter.next(), None);
+    }
 
     #[test]
     fn test_concat_vec_iter() {
