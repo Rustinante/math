@@ -4,7 +4,7 @@ pub struct ConcatenatedIter<I: Iterator> {
 }
 
 impl<I: Iterator> ConcatenatedIter<I> {
-    fn from_iters(iters: Vec<I>) -> Self {
+    pub fn from_iters(iters: Vec<I>) -> Self {
         ConcatenatedIter {
             iters,
             current_iter_index: 0,
