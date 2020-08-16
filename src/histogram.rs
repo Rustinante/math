@@ -17,6 +17,8 @@ where
     counters: Vec<usize>,
     num_less_than_min: usize,
     num_larger_than_max: usize,
+    min_received: Option<T>,
+    max_received: Option<T>,
 }
 
 impl<T> Histogram<T>
@@ -33,13 +35,15 @@ where
     /// ```
     /// use math::histogram::Histogram;
     ///
-    /// let histogram = Histogram::new(&vec![2, -1, 3, 5, 8], 5, 0, 10).unwrap();
+    /// let histogram = Histogram::new(Some(&vec![2, -1, 3, 5, 8]), 5, 0, 10).unwrap();
     /// assert_eq!(histogram.get_boundaries().len(), 6);
     /// assert_eq!(histogram.get_num_less_than_min(), 1);
     /// assert_eq!(histogram.get_num_larger_than_max(), 0);
+    /// assert_eq!(histogram.get_min_received(), Some(-1));
+    /// assert_eq!(histogram.get_max_received(), Some(8));
     /// ```
     pub fn new<'a>(
-        elements: &'a Vec<T>,
+        elements: Option<&'a Vec<T>>,
         num_intervals: usize,
         min: T,
         max: T,
@@ -83,23 +87,44 @@ where
 
         let mut num_larger_than_max = 0;
         let mut num_less_than_min = 0;
+        let mut min_received = None;
+        let mut max_received = None;
         let mut counters = vec![0usize; num_intervals];
-        for a in elements.iter() {
-            if *a < min {
-                num_less_than_min += 1;
-            } else if *a > max {
-                num_larger_than_max += 1;
-            } else {
-                let i = match ((*a - min) / delta).to_usize() {
-                    Some(i) => i,
-                    None => {
-                        return Err(format!(
-                            "failed to convert {} to an usize index",
-                            (*a - min) / delta
-                        ))
+        if let Some(elements) = elements {
+            for a in elements.iter() {
+                if *a < min {
+                    num_less_than_min += 1;
+                } else if *a > max {
+                    num_larger_than_max += 1;
+                } else {
+                    let i = match ((*a - min) / delta).to_usize() {
+                        Some(i) => i,
+                        None => {
+                            return Err(format!(
+                                "failed to convert {} to an usize index",
+                                (*a - min) / delta
+                            ))
+                        }
+                    };
+                    counters[cmp::min(i, num_intervals - 1)] += 1;
+                }
+
+                match min_received {
+                    None => min_received = Some(*a),
+                    Some(m) => {
+                        if *a < m {
+                            min_received = Some(*a);
+                        }
                     }
-                };
-                counters[cmp::min(i, num_intervals - 1)] += 1;
+                }
+                match max_received {
+                    None => max_received = Some(*a),
+                    Some(m) => {
+                        if *a > m {
+                            max_received = Some(*a);
+                        }
+                    }
+                }
             }
         }
         Ok(Histogram {
@@ -107,6 +132,8 @@ where
             counters,
             num_less_than_min,
             num_larger_than_max,
+            min_received,
+            max_received,
         })
     }
 
@@ -147,7 +174,7 @@ where
             }
             Some(max) => max,
         };
-        Histogram::new(elements, num_intervals, *min, *max)
+        Histogram::new(Some(elements), num_intervals, *min, *max)
     }
 
     #[inline]
@@ -160,12 +187,24 @@ where
         &self.counters
     }
 
+    #[inline]
     pub fn get_num_less_than_min(&self) -> usize {
         self.num_less_than_min
     }
 
+    #[inline]
     pub fn get_num_larger_than_max(&self) -> usize {
         self.num_larger_than_max
+    }
+
+    #[inline]
+    pub fn get_min_received(&self) -> Option<T> {
+        self.min_received
+    }
+
+    #[inline]
+    pub fn get_max_received(&self) -> Option<T> {
+        self.max_received
     }
 
     #[inline]
@@ -194,6 +233,23 @@ where
         } else {
             let i = ((item - min_boundary) / delta).to_usize().unwrap();
             self.counters[cmp::min(i, num_intervals - 1)] += 1;
+        }
+
+        match self.min_received {
+            None => self.min_received = Some(item),
+            Some(m) => {
+                if item < m {
+                    self.min_received = Some(item);
+                }
+            }
+        }
+        match self.max_received {
+            None => self.max_received = Some(item),
+            Some(m) => {
+                if item > m {
+                    self.max_received = Some(item);
+                }
+            }
         }
     }
 }
@@ -254,6 +310,12 @@ where
             "inf",
             self.num_larger_than_max,
         )?;
+        if let Some(min_received) = self.min_received {
+            writeln!(f, "min value received: {}", min_received)?;
+        }
+        if let Some(max_received) = self.max_received {
+            writeln!(f, "max value received: {}", max_received)?;
+        }
         Ok(())
     }
 }
@@ -275,7 +337,7 @@ where
 /// An iterator that iterates through the entries of the histogram
 /// ```
 /// use math::{histogram::Histogram, traits::ToIterator};
-/// let histogram = Histogram::new(&vec![4., 0., 3.5], 2, 0., 7.).unwrap();
+/// let histogram = Histogram::new(Some(&vec![4., 0., 3.5]), 2, 0., 7.).unwrap();
 /// let mut iter = histogram.to_iter();
 /// assert_eq!(Some((0., 3.5, 1)), iter.next());
 /// assert_eq!(Some((3.5, 7., 2)), iter.next());
@@ -319,7 +381,7 @@ mod tests {
     fn test_histogram() {
         let elements = vec![4., 0., 3.5];
         let num_intervals = 2;
-        let mut histogram = match Histogram::new(&elements, num_intervals, 0., 7.) {
+        let mut histogram = match Histogram::new(Some(&elements), num_intervals, 0., 7.) {
             Ok(h) => h,
             Err(why) => {
                 eprintln!("{}", why);
@@ -336,5 +398,14 @@ mod tests {
         assert_eq!(num_intervals, histogram.counters.len());
         assert_eq!(histogram.counters[0], 1);
         assert_eq!(histogram.counters[1], 3);
+    }
+
+    #[test]
+    fn test_empty_histogram() {
+        let histogram = Histogram::new(None, 10, 0., 10.).unwrap();
+        assert_eq!(histogram.get_min_received(), None);
+        assert_eq!(histogram.get_max_received(), None);
+        assert_eq!(histogram.get_num_less_than_min(), 0);
+        assert_eq!(histogram.get_num_larger_than_max(), 0);
     }
 }
