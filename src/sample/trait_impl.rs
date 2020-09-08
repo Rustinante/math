@@ -2,7 +2,10 @@ use std::{ops::Deref, slice::Iter};
 
 use crate::sample::Sample;
 
-impl<'a, E: Clone> Sample<'a, Iter<'a, E>, &'a E, Vec<E>> for Vec<E> where &'a E: Deref {}
+impl<'a, E: Clone> Sample<'a, Iter<'a, E>, &'a E, Vec<E>> for Vec<E> where
+    &'a E: Deref
+{
+}
 
 #[cfg(test)]
 mod tests {

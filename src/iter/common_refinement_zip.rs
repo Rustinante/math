@@ -17,7 +17,9 @@ where
     B: Copy + Num + Ord,
     Self: Iterator<Item = X> + Sized,
     P: Clone + Interval<B> + for<'b> Intersect<&'b P, Option<P>>, {
-    fn get_interval_value_extractor(&self) -> Box<dyn Fn(<Self as Iterator>::Item) -> (P, V)>;
+    fn get_interval_value_extractor(
+        &self,
+    ) -> Box<dyn Fn(<Self as Iterator>::Item) -> (P, V)>;
 
     fn common_refinement_zip(
         mut self,
@@ -127,22 +129,25 @@ where
 }
 
 /// # Iterator Algorithm Description
-/// Given a list of iterators, a list of the current minimum interval for each iterator will be
-/// maintained together with their associated values. Then, at each pass the smallest minimum common
-/// refinement of the current intervals is subtracted from each interval. A list of values will be
-/// returned along with the common refinement. Each value will be the value associated with the
-/// iterated interval if the common refinement has a non-empty intersection with the corresponding
-/// interval, and `None` otherwise.
+/// Given a list of iterators, a list of the current minimum interval for each
+/// iterator will be maintained together with their associated values. Then, at
+/// each pass the smallest minimum common refinement of the current intervals is
+/// subtracted from each interval. A list of values will be returned along with
+/// the common refinement. Each value will be the value associated with the
+/// iterated interval if the common refinement has a non-empty intersection with
+/// the corresponding interval, and `None` otherwise.
 ///
-/// If an interval becomes empty after the subtraction, the corresponding iterator will be called
-/// to replace the interval with the next interval, together with the associated values.
+/// If an interval becomes empty after the subtraction, the corresponding
+/// iterator will be called to replace the interval with the next interval,
+/// together with the associated values.
 ///
 /// # Fields
 /// * `iters`: the list of zipped iterators.
-/// * `intervals`: the intervals assocaited with each iterator for the current pass.
+/// * `intervals`: the intervals assocaited with each iterator for the current
+///   pass.
 /// * `values`: the values associated with each iterator for the current pass.
-/// * `extractor`: a function that extracts a tuple of (interval, value) from each of the items
-///   yielded from the iterators.
+/// * `extractor`: a function that extracts a tuple of (interval, value) from
+///   each of the items yielded from the iterators.
 pub struct CommonRefinementZipped<B, I, X, P, V>
 where
     B: Copy + Num + Ord,
@@ -179,7 +184,8 @@ where
 
         let mut starts_iter = starts.iter();
         let min_start = match starts_iter.next() {
-            // if all intervals are empty, it means that all the iterators have been exhausted
+            // if all intervals are empty, it means that all the iterators have
+            // been exhausted
             None => return None,
             Some(&a) => a,
         };
@@ -211,8 +217,10 @@ where
 
                         // subtract the min_refinement from the interval
                         // min_start <= i.get_start() <= min_end <= i.get_end()
-                        let remainder =
-                            P::from_boundaries(min_refinement.get_end() + B::one(), i.get_end());
+                        let remainder = P::from_boundaries(
+                            min_refinement.get_end() + B::one(),
+                            i.get_end(),
+                        );
                         if remainder.is_empty() {
                             match iter.next() {
                                 None => {
@@ -220,7 +228,8 @@ where
                                     *v = None;
                                 }
                                 Some(x) => {
-                                    let (new_interval, new_val) = (self.extractor)(x);
+                                    let (new_interval, new_val) =
+                                        (self.extractor)(x);
                                     *interval = Some(new_interval);
                                     *v = Some(new_val);
                                 }

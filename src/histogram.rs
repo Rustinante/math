@@ -9,10 +9,17 @@ use num::traits::{
 
 use crate::traits::{Collecting, ToIterator};
 
-/// The Histogram consists of `num_intervals` intervals between the `min` and the `max` value.
+/// The Histogram consists of `num_intervals` intervals between the `min` and
+/// the `max` value.
 pub struct Histogram<T>
 where
-    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display, {
+    T: PartialOrd
+        + NumAssign
+        + NumOps
+        + FromPrimitive
+        + ToPrimitive
+        + Copy
+        + fmt::Display, {
     boundaries: Vec<T>,
     counters: Vec<usize>,
     num_less_than_min: usize,
@@ -23,19 +30,27 @@ where
 
 impl<T> Histogram<T>
 where
-    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display,
+    T: PartialOrd
+        + NumAssign
+        + NumOps
+        + FromPrimitive
+        + ToPrimitive
+        + Copy
+        + fmt::Display,
 {
     /// # Initializing with Known Boundaries
-    /// Creates a Histogram consisting of `num_intervals` intervals between the values `min` and
-    /// `max`, and inserts the values from the vector of `elements` into the histogram.
-    /// Values smaller than `min` will increment the counter `num_less_than_min`,
-    /// while values larger than `max` will increment the counter `num_larger_than_max`
+    /// Creates a Histogram consisting of `num_intervals` intervals between the
+    /// values `min` and `max`, and inserts the values from the vector of
+    /// `elements` into the histogram. Values smaller than `min` will
+    /// increment the counter `num_less_than_min`, while values larger than
+    /// `max` will increment the counter `num_larger_than_max`
     ///
     /// # Example
     /// ```
     /// use math::histogram::Histogram;
     ///
-    /// let histogram = Histogram::new(Some(&vec![2, -1, 3, 5, 8]), 5, 0, 10).unwrap();
+    /// let histogram =
+    ///     Histogram::new(Some(&vec![2, -1, 3, 5, 8]), 5, 0, 10).unwrap();
     /// assert_eq!(histogram.get_boundaries().len(), 6);
     /// assert_eq!(histogram.get_num_less_than_min(), 1);
     /// assert_eq!(histogram.get_num_larger_than_max(), 0);
@@ -161,16 +176,16 @@ where
         let min = match elements.iter().min() {
             None => {
                 return Err(format!(
-                    "failed to extract the min elements when range is set to auto"
-                ))
+                "failed to extract the min elements when range is set to auto"
+            ))
             }
             Some(min) => min,
         };
         let max = match elements.iter().max() {
             None => {
                 return Err(format!(
-                    "failed to extract the max elements when range is set to auto"
-                ))
+                "failed to extract the max elements when range is set to auto"
+            ))
             }
             Some(max) => max,
         };
@@ -220,7 +235,13 @@ where
 
 impl<T> Collecting<T> for Histogram<T>
 where
-    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display,
+    T: PartialOrd
+        + NumAssign
+        + NumOps
+        + FromPrimitive
+        + ToPrimitive
+        + Copy
+        + fmt::Display,
 {
     fn collect(&mut self, item: T) {
         let delta = self.boundaries[1] - self.boundaries[0];
@@ -256,7 +277,13 @@ where
 
 impl<T> fmt::Display for Histogram<T>
 where
-    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display,
+    T: PartialOrd
+        + NumAssign
+        + NumOps
+        + FromPrimitive
+        + ToPrimitive
+        + Copy
+        + fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ratios = self.get_ratios();
@@ -322,9 +349,16 @@ where
 
 pub type HistogramEntry<T> = (T, T, usize);
 
-impl<'a, T> ToIterator<'a, HistogramIter<'a, T>, HistogramEntry<T>> for Histogram<T>
+impl<'a, T> ToIterator<'a, HistogramIter<'a, T>, HistogramEntry<T>>
+    for Histogram<T>
 where
-    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display,
+    T: PartialOrd
+        + NumAssign
+        + NumOps
+        + FromPrimitive
+        + ToPrimitive
+        + Copy
+        + fmt::Display,
 {
     fn to_iter(&'a self) -> HistogramIter<'a, T> {
         HistogramIter {
@@ -337,7 +371,8 @@ where
 /// An iterator that iterates through the entries of the histogram
 /// ```
 /// use math::{histogram::Histogram, traits::ToIterator};
-/// let histogram = Histogram::new(Some(&vec![4., 0., 3.5]), 2, 0., 7.).unwrap();
+/// let histogram =
+///     Histogram::new(Some(&vec![4., 0., 3.5]), 2, 0., 7.).unwrap();
 /// let mut iter = histogram.to_iter();
 /// assert_eq!(Some((0., 3.5, 1)), iter.next());
 /// assert_eq!(Some((3.5, 7., 2)), iter.next());
@@ -345,14 +380,26 @@ where
 /// ```
 pub struct HistogramIter<'a, T>
 where
-    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display, {
+    T: PartialOrd
+        + NumAssign
+        + NumOps
+        + FromPrimitive
+        + ToPrimitive
+        + Copy
+        + fmt::Display, {
     histogram: &'a Histogram<T>,
     cursor: usize,
 }
 
 impl<'a, T> Iterator for HistogramIter<'a, T>
 where
-    T: PartialOrd + NumAssign + NumOps + FromPrimitive + ToPrimitive + Copy + fmt::Display,
+    T: PartialOrd
+        + NumAssign
+        + NumOps
+        + FromPrimitive
+        + ToPrimitive
+        + Copy
+        + fmt::Display,
 {
     type Item = HistogramEntry<T>;
 
@@ -381,14 +428,15 @@ mod tests {
     fn test_histogram() {
         let elements = vec![4., 0., 3.5];
         let num_intervals = 2;
-        let mut histogram = match Histogram::new(Some(&elements), num_intervals, 0., 7.) {
-            Ok(h) => h,
-            Err(why) => {
-                eprintln!("{}", why);
-                assert!(false, why);
-                return;
-            }
-        };
+        let mut histogram =
+            match Histogram::new(Some(&elements), num_intervals, 0., 7.) {
+                Ok(h) => h,
+                Err(why) => {
+                    eprintln!("{}", why);
+                    assert!(false, why);
+                    return;
+                }
+            };
         histogram.collect(4.);
         let mut iter = histogram.to_iter();
         assert_eq!(Some((0., 3.5, 1)), iter.next());

@@ -65,7 +65,8 @@ mod tests {
         let arr1 = vec![0, 1, 2];
         let arr2 = vec![3, 4];
         let arr3 = vec![5, 6];
-        let mut concat_iter = ConcatenatedIter::from(vec![arr1.iter(), arr2.iter(), arr3.iter()]);
+        let mut concat_iter =
+            ConcatenatedIter::from(vec![arr1.iter(), arr2.iter(), arr3.iter()]);
         assert_eq!(concat_iter.next(), Some(&0));
         assert_eq!(concat_iter.next(), Some(&1));
         assert_eq!(concat_iter.next(), Some(&2));
@@ -116,7 +117,8 @@ mod tests {
     #[test]
     fn test_concat_btreemap_iter() {
         let m1: BTreeMap<i32, i32> = vec![(1, 2), (3, 4)].into_iter().collect();
-        let m2: BTreeMap<i32, i32> = vec![(11, 12), (13, 14), (15, 16)].into_iter().collect();
+        let m2: BTreeMap<i32, i32> =
+            vec![(11, 12), (13, 14), (15, 16)].into_iter().collect();
         let mut iter = m1.iter().into_concat_iter(m2.iter());
         assert_eq!(iter.next(), Some((&1, &2)));
         assert_eq!(iter.next(), Some((&3, &4)));

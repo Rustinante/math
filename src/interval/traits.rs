@@ -2,8 +2,8 @@ use crate::set::traits::Set;
 use num::Num;
 
 /// A one-dimensional interval with a start and an end.
-/// Whether or not the start and end elements are included in the interval depends
-/// on the actual implementor type
+/// Whether or not the start and end elements are included in the interval
+/// depends on the actual implementor type
 pub trait Interval<T>: Set<T>
 where
     T: Num + Copy, {
@@ -20,7 +20,8 @@ pub trait Coalesce<T>: Sized {
     fn coalesce_with(&self, other: &T) -> Option<Self>;
 }
 
-/// implementors are container types that should be able to coalesce the contained intervals
+/// implementors are container types that should be able to coalesce the
+/// contained intervals
 pub trait CoalesceIntervals<I: Interval<E>, E: Num + Copy>: Sized {
     fn to_coalesced_intervals(&self) -> Vec<I>;
 

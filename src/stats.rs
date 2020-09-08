@@ -16,7 +16,10 @@ pub fn n_choose_2(n: usize) -> usize {
     }
 }
 
-pub fn kahan_sigma<E, I: Iterator<Item = E>, F>(element_iterator: I, op: F) -> f64
+pub fn kahan_sigma<E, I: Iterator<Item = E>, F>(
+    element_iterator: I,
+    op: F,
+) -> f64
 where
     F: Fn(E) -> f64, {
     // Kahan summation algorithm
@@ -31,7 +34,10 @@ where
     sum
 }
 
-pub fn kahan_sigma_f32<E, I: Iterator<Item = E>, F>(element_iterator: I, op: F) -> f32
+pub fn kahan_sigma_f32<E, I: Iterator<Item = E>, F>(
+    element_iterator: I,
+    op: F,
+) -> f32
 where
     F: Fn(E) -> f32, {
     // Kahan summation algorithm
@@ -83,7 +89,9 @@ where
 }
 
 #[inline]
-pub fn sum_of_squares<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f64
+pub fn sum_of_squares<'a, A, T: Iterator<Item = &'a A>>(
+    element_iterator: T,
+) -> f64
 where
     A: Copy + ToPrimitive + 'a,
     &'a A: Deref, {
@@ -94,7 +102,9 @@ where
 }
 
 #[inline]
-pub fn sum_of_squares_f32<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f32
+pub fn sum_of_squares_f32<'a, A, T: Iterator<Item = &'a A>>(
+    element_iterator: T,
+) -> f32
 where
     A: Copy + ToPrimitive + 'a,
     &'a A: Deref, {
@@ -105,7 +115,9 @@ where
 }
 
 #[inline]
-pub fn sum_of_fourth_power_f32<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f32
+pub fn sum_of_fourth_power_f32<'a, A, T: Iterator<Item = &'a A>>(
+    element_iterator: T,
+) -> f32
 where
     A: Copy + ToPrimitive + 'a,
     &'a A: Deref, {
@@ -120,7 +132,8 @@ pub fn mean<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f64
 where
     A: Copy + ToPrimitive + 'a,
     &'a A: Deref, {
-    let (sum, count) = kahan_sigma_return_counter(element_iterator, |a| a.to_f64().unwrap());
+    let (sum, count) =
+        kahan_sigma_return_counter(element_iterator, |a| a.to_f64().unwrap());
     sum / count as f64
 }
 
@@ -129,7 +142,10 @@ where
 /// for population variance, set `ddof` to 0
 /// for sample variance, set `ddof` to 1
 #[inline]
-pub fn variance<'a, T: Clone + Iterator<Item = &'a A>, A>(element_iterator: T, ddof: usize) -> f64
+pub fn variance<'a, T: Clone + Iterator<Item = &'a A>, A>(
+    element_iterator: T,
+    ddof: usize,
+) -> f64
 where
     A: Copy + ToPrimitive + 'a,
     &'a A: Deref, {
@@ -184,7 +200,9 @@ mod tests {
 
     use rand::{seq::SliceRandom, Rng};
 
-    use super::{mean, percentile_by, standard_deviation, sum, sum_of_squares, variance};
+    use super::{
+        mean, percentile_by, standard_deviation, sum, sum_of_squares, variance,
+    };
     use crate::stats::sum_f32;
 
     const F64_ERROR_TOLERANCE: f64 = 1e-6;
@@ -195,7 +213,8 @@ mod tests {
         let elements = vec![1, 5, 3, 2, 7, 100, 1234, 234, 12, 0, 1234];
         assert_eq!(elements.iter().sum::<i32>() as f64, sum(elements.iter()));
         assert!(
-            (elements.iter().sum::<i32>() as f32 - sum_f32(elements.iter())).abs()
+            (elements.iter().sum::<i32>() as f32 - sum_f32(elements.iter()))
+                .abs()
                 < F32_ERROR_TOLERANCE
         );
     }
@@ -221,7 +240,8 @@ mod tests {
 
     #[test]
     fn test_variance() {
-        let elements = vec![1, 5, 123, 5, -345, 467, 568, 1234, -123, -2343, 23];
+        let elements =
+            vec![1, 5, 123, 5, -345, 467, 568, 1234, -123, -2343, 23];
         assert_eq!(768950.6, variance(elements.iter(), 1));
         assert_eq!(699046.0, variance(elements.iter(), 0));
     }
@@ -237,16 +257,19 @@ mod tests {
     fn test_percentile_by() {
         let mut rng = rand::thread_rng();
         {
-            let mut v1 = vec![-0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7];
+            let mut v1 =
+                vec![-0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7];
             for _ in 0..5 {
                 v1.shuffle(&mut rng);
                 for i in (0..100).step_by(5) {
                     assert!(
                         ((i / 10) as f64 / 10.
                             - 0.2
-                            - percentile_by(v1.clone(), i as f64 / 100., |a, b| {
-                                a.partial_cmp(b).unwrap()
-                            })
+                            - percentile_by(
+                                v1.clone(),
+                                i as f64 / 100.,
+                                |a, b| { a.partial_cmp(b).unwrap() }
+                            )
                             .unwrap())
                         .abs()
                             < F64_ERROR_TOLERANCE
@@ -262,7 +285,10 @@ mod tests {
                 for i in (0..100).step_by(5) {
                     assert_eq!(
                         (i / 10 - 2),
-                        percentile_by(v2.clone(), i as f64 / 100., |a, b| { a.cmp(b) }).unwrap()
+                        percentile_by(v2.clone(), i as f64 / 100., |a, b| {
+                            a.cmp(b)
+                        })
+                        .unwrap()
                     );
                 }
             }
@@ -275,7 +301,10 @@ mod tests {
                 for i in 0..100 {
                     assert_eq!(
                         (i - 10) * 10,
-                        percentile_by(v3.clone(), i as f64 / 100., |a, b| { a.cmp(b) }).unwrap()
+                        percentile_by(v3.clone(), i as f64 / 100., |a, b| {
+                            a.cmp(b)
+                        })
+                        .unwrap()
                     )
                 }
             }

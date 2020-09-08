@@ -1,10 +1,13 @@
 //! Modeling a collection of disjoint integer intervals.
 
 use crate::set::{
-    contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
+    contiguous_integer_set::ContiguousIntegerSet,
+    ordered_integer_set::OrderedIntegerSet,
 };
 use rayon::iter::{
-    plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer},
+    plumbing::{
+        bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer,
+    },
     IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
 };
 use std::ops::Index;
@@ -66,7 +69,11 @@ pub struct IntegerPartitionIter {
 }
 
 impl IntegerPartitionIter {
-    pub fn clone_with_range(&self, start: usize, end_exclusive: usize) -> IntegerPartitionIter {
+    pub fn clone_with_range(
+        &self,
+        start: usize,
+        end_exclusive: usize,
+    ) -> IntegerPartitionIter {
         assert!(
             start <= end_exclusive,
             "start ({}) has to be <= end_exclusive ({})",
@@ -232,7 +239,8 @@ mod tests {
         );
         assert_eq!(iter.next(), None);
 
-        let num_elements: usize = partitions.iter().into_par_iter().map(|p| p.size()).sum();
+        let num_elements: usize =
+            partitions.iter().into_par_iter().map(|p| p.size()).sum();
         assert_eq!(num_elements, 26);
     }
 }

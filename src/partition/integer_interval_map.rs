@@ -3,8 +3,8 @@
 use crate::{
     interval::{traits::Interval, I64Interval},
     set::{
-        contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
-        traits::Intersect,
+        contiguous_integer_set::ContiguousIntegerSet,
+        ordered_integer_set::OrderedIntegerSet, traits::Intersect,
     },
     traits::SubsetIndexable,
 };
@@ -27,12 +27,15 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
     /// Adds an integer interval as the `key` with an associated `value`.
     /// Any existing intervals intersecting the `key` will be broken up,
     /// where the region of intersection will have a value being the sum of
-    /// the existing value and the new `value`, while the non-intersecting regions
-    /// will retain their original values.
+    /// the existing value and the new `value`, while the non-intersecting
+    /// regions will retain their original values.
     ///
     /// # Example
     /// ```
-    /// use math::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
+    /// use math::{
+    ///     interval::I64Interval,
+    ///     partition::integer_interval_map::IntegerIntervalMap,
+    /// };
     ///
     /// //                          | value
     /// // -1 0 1 2 3 4             | +2
@@ -57,13 +60,15 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
     /// ```
     pub fn aggregate(&mut self, key: I64Interval, value: T) {
         let (start, end) = key.get_start_and_end();
-        let mut remaining_interval = OrderedIntegerSet::from_contiguous_integer_sets(vec![key]);
+        let mut remaining_interval =
+            OrderedIntegerSet::from_contiguous_integer_sets(vec![key]);
         let mut to_add = Vec::new();
         let mut to_remove = Vec::new();
 
-        // All intervals in the range (start, start)..(end + 1, end + 1) intersect with the key
-        // due to the lexicographical ordering of the ContiguousIntegerSet.
-        // Furthermore, there can be at most one interval whose start is less than the start of
+        // All intervals in the range (start, start)..(end + 1, end + 1)
+        // intersect with the key due to the lexicographical ordering of
+        // the ContiguousIntegerSet. Furthermore, there can be at most
+        // one interval whose start is less than the start of
         // the key, and which intersects the key.
         for (&interval, &val) in self
             .map
@@ -85,7 +90,9 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
                 remaining_interval -= common_interval;
                 to_add.push((common_interval, val + value));
             }
-            for outstanding_interval in (interval - intersection).into_intervals() {
+            for outstanding_interval in
+                (interval - intersection).into_intervals()
+            {
                 to_add.push((outstanding_interval, val));
             }
         }
@@ -108,7 +115,10 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
 
     /// # Example
     /// ```
-    /// use math::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
+    /// use math::{
+    ///     interval::I64Interval,
+    ///     partition::integer_interval_map::IntegerIntervalMap,
+    /// };
     ///
     /// let mut interval_map = IntegerIntervalMap::new();
     /// interval_map.aggregate(I64Interval::new(-1, 4), 2);
@@ -138,12 +148,15 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
         self.map
     }
 
-    /// Returns a `Some` value only if the key corresponds to one of the current exact intervals
-    /// and not its subset or superset.
+    /// Returns a `Some` value only if the key corresponds to one of the current
+    /// exact intervals and not its subset or superset.
     ///
     /// # Example
     /// ```
-    /// use math::{interval::I64Interval, partition::integer_interval_map::IntegerIntervalMap};
+    /// use math::{
+    ///     interval::I64Interval,
+    ///     partition::integer_interval_map::IntegerIntervalMap,
+    /// };
     ///
     /// let mut interval_map = IntegerIntervalMap::new();
     /// interval_map.aggregate(I64Interval::new(2, 5), 1);
@@ -174,7 +187,8 @@ impl<T> IntoIterator for IntegerIntervalMap<T> {
 impl<T> SubsetIndexable<I64Interval, I64Interval> for IntegerIntervalMap<T> {
     fn get_set_containing(&self, subset: &I64Interval) -> Option<I64Interval> {
         let start = subset.get_start();
-        // the containing interval must be < (start + 1, start + 1) lexicographically
+        // the containing interval must be < (start + 1, start + 1)
+        // lexicographically
         for (interval, _) in self
             .map
             .range(..I64Interval::new(start + 1, start + 1))

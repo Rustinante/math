@@ -28,7 +28,8 @@ pub struct UnionZippedIter<'a, K, M, I: Iterator<Item = K>> {
 /// ```
 /// use math::iter::UnionZip;
 /// use std::collections::HashMap;
-/// let m1: HashMap<i32, i32> = vec![(1, 10), (3, 23), (4, 20)].into_iter().collect();
+/// let m1: HashMap<i32, i32> =
+///     vec![(1, 10), (3, 23), (4, 20)].into_iter().collect();
 /// let m2: HashMap<i32, i32> = vec![(0, 4), (1, 20), (4, 20), (9, 29)]
 ///     .into_iter()
 ///     .collect();
@@ -45,7 +46,10 @@ impl<K, V> UnionZip<K, HashMap<K, V>> for HashMap<K, V>
 where
     K: Hash + Eq + Clone + Ord,
 {
-    fn union_zip<'a>(&'a self, other: &'a Self) -> UnionZipped<'a, K, HashMap<K, V>> {
+    fn union_zip<'a>(
+        &'a self,
+        other: &'a Self,
+    ) -> UnionZipped<'a, K, HashMap<K, V>> {
         let mut keys: Vec<K> = self
             .keys()
             .collect::<HashSet<&K>>()
@@ -62,11 +66,15 @@ where
     }
 }
 
-impl<'a, K, V> IntoUnionZip<'a, K, HashMap<K, V>> for UnionZipped<'a, K, HashMap<K, V>>
+impl<'a, K, V> IntoUnionZip<'a, K, HashMap<K, V>>
+    for UnionZipped<'a, K, HashMap<K, V>>
 where
     K: Hash + Eq + Clone + Ord,
 {
-    fn into_union_zip(self, other: &'a HashMap<K, V>) -> UnionZipped<'a, K, HashMap<K, V>> {
+    fn into_union_zip(
+        self,
+        other: &'a HashMap<K, V>,
+    ) -> UnionZipped<'a, K, HashMap<K, V>> {
         let mut keys: Vec<K> = self
             .keys
             .iter()
@@ -91,7 +99,8 @@ where
     K: Hash + Eq,
 {
     type IntoIter = UnionZippedIter<'a, K, HashMap<K, V>, IntoIter<K>>;
-    type Item = <UnionZippedIter<'a, K, HashMap<K, V>, IntoIter<K>> as Iterator>::Item;
+    type Item =
+        <UnionZippedIter<'a, K, HashMap<K, V>, IntoIter<K>> as Iterator>::Item;
 
     fn into_iter(self) -> Self::IntoIter {
         UnionZippedIter {

@@ -3,7 +3,9 @@ use crate::{
     sample::Sample,
     search::binary_search::BinarySearch,
     set::{
-        contiguous_integer_set::{ContiguousIntegerSet, ContiguousIntegerSetIter},
+        contiguous_integer_set::{
+            ContiguousIntegerSet, ContiguousIntegerSetIter,
+        },
         traits::{Finite, Intersect, Set},
     },
     traits::{Collecting, Slicing, ToIterator},
@@ -17,12 +19,13 @@ use std::{
 
 pub mod arithmetic;
 
-/// An `OrderedIntegerSet` consists of a sequence of `ContiguousIntegerSet` that are sorted
-/// in ascending order where successive intervals are not coalesceable, i.e., if intervals A and B
-/// are successive intervals, then A.end + 1 < B.start
+/// An `OrderedIntegerSet` consists of a sequence of `ContiguousIntegerSet` that
+/// are sorted in ascending order where successive intervals are not
+/// coalesceable, i.e., if intervals A and B are successive intervals, then
+/// A.end + 1 < B.start
 ///
-/// E.g. An `OrderedIntegerSet` containing `ContiguousIntegerSet`s [2,3] and [5,7] will
-/// represent the set of integers {2, 3, 5, 6, 7}
+/// E.g. An `OrderedIntegerSet` containing `ContiguousIntegerSet`s [2,3] and
+/// [5,7] will represent the set of integers {2, 3, 5, 6, 7}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OrderedIntegerSet<E: Integer + Copy + ToPrimitive> {
     intervals: Vec<ContiguousIntegerSet<E>>,
@@ -38,11 +41,12 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
     /// Creates an `OrderedIntegerSet` where the i-th interval is represented by
     /// the i-th two-element array in `slice`.
     ///
-    /// E.g. [[2, 3], [5, 7]] will create an `OrderedIntegerSet` representing {2, 3, 5, 6, 7}, where
-    /// the contiguous integers are stored as `ContiguousIntegerSet`s
+    /// E.g. [[2, 3], [5, 7]] will create an `OrderedIntegerSet` representing
+    /// {2, 3, 5, 6, 7}, where the contiguous integers are stored as
+    /// `ContiguousIntegerSet`s
     ///
-    /// Note that the intervals in the `slice` parameters do not have to be sorted or
-    /// non-overlapping.
+    /// Note that the intervals in the `slice` parameters do not have to be
+    /// sorted or non-overlapping.
     pub fn from_slice(slice: &[[E; 2]]) -> OrderedIntegerSet<E> {
         let intervals = slice
             .iter()
@@ -116,12 +120,17 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
     }
 
     /// The `slicer` can be any struct that implements the `Slicing` trait.
-    /// For example, the `Slicing` trait has been implemented for the `Range<usize>` struct.
+    /// For example, the `Slicing` trait has been implemented for the
+    /// `Range<usize>` struct.
     ///
-    /// For an `OrderedIntegerSet` containing n elements, the `Range<usize>` object
-    /// created by `a..b` will slice the integer set and return all the elements from
-    /// the a-th (inclusive) to the b-th (exclusive) in the form of an `OrderedIntegerSet`
-    pub fn slice<'a, I: Slicing<&'a OrderedIntegerSet<E>, OrderedIntegerSet<E>>>(
+    /// For an `OrderedIntegerSet` containing n elements, the `Range<usize>`
+    /// object created by `a..b` will slice the integer set and return all
+    /// the elements from the a-th (inclusive) to the b-th (exclusive) in
+    /// the form of an `OrderedIntegerSet`
+    pub fn slice<
+        'a,
+        I: Slicing<&'a OrderedIntegerSet<E>, OrderedIntegerSet<E>>,
+    >(
         &'a self,
         slicer: I,
     ) -> OrderedIntegerSet<E> {
@@ -172,7 +181,9 @@ impl<E: Integer + Copy + Sum + ToPrimitive> Finite for OrderedIntegerSet<E> {
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> From<Vec<ContiguousIntegerSet<E>>> for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> From<Vec<ContiguousIntegerSet<E>>>
+    for OrderedIntegerSet<E>
+{
     fn from(intervals: Vec<ContiguousIntegerSet<E>>) -> OrderedIntegerSet<E> {
         OrderedIntegerSet {
             intervals,
@@ -207,7 +218,8 @@ impl<E: Integer + Copy + ToPrimitive> Set<E> for OrderedIntegerSet<E> {
     }
 }
 
-impl<E> Intersect<&OrderedIntegerSet<E>, OrderedIntegerSet<E>> for OrderedIntegerSet<E>
+impl<E> Intersect<&OrderedIntegerSet<E>, OrderedIntegerSet<E>>
+    for OrderedIntegerSet<E>
 where
     E: Integer + Copy + ToPrimitive,
 {
@@ -217,10 +229,14 @@ where
         let rhs_len = rhs_intervals.len();
         let mut j = 0;
         for interval in self.intervals.iter() {
-            while j < rhs_len && rhs_intervals[j].get_end() < interval.get_start() {
+            while j < rhs_len
+                && rhs_intervals[j].get_end() < interval.get_start()
+            {
                 j += 1;
             }
-            while j < rhs_len && rhs_intervals[j].get_start() <= interval.get_end() {
+            while j < rhs_len
+                && rhs_intervals[j].get_start() <= interval.get_end()
+            {
                 let rhs_interval = &rhs_intervals[j];
                 if let Some(i) = interval.intersect(rhs_interval) {
                     intersection.push(i);
@@ -235,26 +251,37 @@ where
         OrderedIntegerSet::from_contiguous_integer_sets(intersection)
     }
 
-    fn has_non_empty_intersection_with(&self, other: &OrderedIntegerSet<E>) -> bool {
+    fn has_non_empty_intersection_with(
+        &self,
+        other: &OrderedIntegerSet<E>,
+    ) -> bool {
         !self.intersect(other).is_empty()
     }
 }
 
-impl<E> Intersect<&ContiguousIntegerSet<E>, OrderedIntegerSet<E>> for OrderedIntegerSet<E>
+impl<E> Intersect<&ContiguousIntegerSet<E>, OrderedIntegerSet<E>>
+    for OrderedIntegerSet<E>
 where
     E: Integer + Copy + ToPrimitive,
 {
     #[inline]
-    fn intersect(&self, other: &ContiguousIntegerSet<E>) -> OrderedIntegerSet<E> {
+    fn intersect(
+        &self,
+        other: &ContiguousIntegerSet<E>,
+    ) -> OrderedIntegerSet<E> {
         other.intersect(self)
     }
 
-    fn has_non_empty_intersection_with(&self, other: &ContiguousIntegerSet<E>) -> bool {
+    fn has_non_empty_intersection_with(
+        &self,
+        other: &ContiguousIntegerSet<E>,
+    ) -> bool {
         !self.intersect(other).is_empty()
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> Intersect<&OrderedIntegerSet<E>, OrderedIntegerSet<E>>
+impl<E: Integer + Copy + ToPrimitive>
+    Intersect<&OrderedIntegerSet<E>, OrderedIntegerSet<E>>
     for ContiguousIntegerSet<E>
 {
     fn intersect(&self, other: &OrderedIntegerSet<E>) -> OrderedIntegerSet<E> {
@@ -268,7 +295,10 @@ impl<E: Integer + Copy + ToPrimitive> Intersect<&OrderedIntegerSet<E>, OrderedIn
         }
     }
 
-    fn has_non_empty_intersection_with(&self, other: &OrderedIntegerSet<E>) -> bool {
+    fn has_non_empty_intersection_with(
+        &self,
+        other: &OrderedIntegerSet<E>,
+    ) -> bool {
         !self.intersect(other).is_empty()
     }
 }
@@ -314,7 +344,8 @@ impl<E: Integer + Copy + ToPrimitive> Collecting<E> for OrderedIntegerSet<E> {
             return;
         }
 
-        // self.intervals.len() is guaranteed to be non-zero because of check (1)
+        // self.intervals.len() is guaranteed to be non-zero because of check
+        // (1)
         match self.intervals.binary_search_with_cmp(
             0,
             self.intervals.len(),
@@ -330,15 +361,19 @@ impl<E: Integer + Copy + ToPrimitive> Collecting<E> for OrderedIntegerSet<E> {
             },
         ) {
             Ok(i) => {
-                self.intervals[i] = self.intervals[i].coalesce_with(&item).unwrap();
+                self.intervals[i] =
+                    self.intervals[i].coalesce_with(&item).unwrap();
                 if i > 0 {
-                    if let Some(merged) = self.intervals[i - 1].coalesce_with(&self.intervals[i]) {
+                    if let Some(merged) =
+                        self.intervals[i - 1].coalesce_with(&self.intervals[i])
+                    {
                         self.intervals[i - 1] = merged;
                         self.intervals.remove(i);
                     }
                 }
                 if let Some(next) = self.intervals.get(i + 1) {
-                    if let Some(merged) = next.coalesce_with(&self.intervals[i]) {
+                    if let Some(merged) = next.coalesce_with(&self.intervals[i])
+                    {
                         self.intervals[i] = merged;
                         self.intervals.remove(i + 1);
                     }
@@ -396,8 +431,10 @@ where
     }
 }
 
-impl<E> Sample<'_, ContiguousIntegerSetIter<E>, E, OrderedIntegerSet<E>> for ContiguousIntegerSet<E> where
-    E: Integer + Copy + ToPrimitive
+impl<E> Sample<'_, ContiguousIntegerSetIter<E>, E, OrderedIntegerSet<E>>
+    for ContiguousIntegerSet<E>
+where
+    E: Integer + Copy + ToPrimitive,
 {
 }
 
@@ -407,7 +444,9 @@ pub struct IntegerSetIter<E: Integer + Copy + ToPrimitive> {
     current_element_index: E,
 }
 
-impl<E: Integer + Copy + ToPrimitive> From<OrderedIntegerSet<E>> for IntegerSetIter<E> {
+impl<E: Integer + Copy + ToPrimitive> From<OrderedIntegerSet<E>>
+    for IntegerSetIter<E>
+{
     fn from(ordered_integer_set: OrderedIntegerSet<E>) -> IntegerSetIter<E> {
         IntegerSetIter {
             ordered_integer_set,
@@ -421,17 +460,22 @@ impl<E: Integer + Copy + ToPrimitive> Iterator for IntegerSetIter<E> {
     type Item = E;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current_interval_index >= self.ordered_integer_set.intervals.len() {
+        if self.current_interval_index
+            >= self.ordered_integer_set.intervals.len()
+        {
             None
         } else {
-            let interval = &self.ordered_integer_set.intervals[self.current_interval_index];
-            if self.current_element_index.to_usize().unwrap() >= interval.size() {
+            let interval = &self.ordered_integer_set.intervals
+                [self.current_interval_index];
+            if self.current_element_index.to_usize().unwrap() >= interval.size()
+            {
                 self.current_interval_index += 1;
                 self.current_element_index = E::zero();
                 self.next()
             } else {
                 let val = interval.get_start() + self.current_element_index;
-                self.current_element_index = self.current_element_index + E::one();
+                self.current_element_index =
+                    self.current_element_index + E::one();
                 Some(val)
             }
         }
@@ -446,8 +490,10 @@ impl<E: Integer + Copy + ToPrimitive> ToIterator<'_, IntegerSetIter<E>, E>
     }
 }
 
-impl<E> Sample<'_, IntegerSetIter<E>, E, OrderedIntegerSet<E>> for OrderedIntegerSet<E> where
-    E: Integer + Copy + Sum + ToPrimitive
+impl<E> Sample<'_, IntegerSetIter<E>, E, OrderedIntegerSet<E>>
+    for OrderedIntegerSet<E>
+where
+    E: Integer + Copy + Sum + ToPrimitive,
 {
 }
 
@@ -490,7 +536,8 @@ mod tests {
             ContiguousIntegerSet::new(7, 9)
         ]);
 
-        let mut set = OrderedIntegerSet::from_slice(&[[1, 3], [5, 7], [15, 20]]);
+        let mut set =
+            OrderedIntegerSet::from_slice(&[[1, 3], [5, 7], [15, 20]]);
         set.collect(-5);
         set.collect(-1);
         set.collect(0);
@@ -565,7 +612,8 @@ mod tests {
     #[test]
     fn test_integer_set_minus_contiguous_integer_set() {
         fn test(a: &[[i32; 2]], b: &[i32; 2], expected: &[[i32; 2]]) {
-            let diff = OrderedIntegerSet::from_slice(a) - ContiguousIntegerSet::new(b[0], b[1]);
+            let diff = OrderedIntegerSet::from_slice(a)
+                - ContiguousIntegerSet::new(b[0], b[1]);
             assert_eq!(diff, OrderedIntegerSet::from_slice(expected));
         }
         test(&[[1, 5], [8, 12], [-4, -2]], &[100, -100], &[
@@ -593,7 +641,8 @@ mod tests {
     #[test]
     fn test_contiguous_integer_set_minus_integer_set() {
         fn test(a: &[i32; 2], b: &[[i32; 2]], expected: &[[i32; 2]]) {
-            let diff = ContiguousIntegerSet::new(a[0], a[1]) - OrderedIntegerSet::from_slice(b);
+            let diff = ContiguousIntegerSet::new(a[0], a[1])
+                - OrderedIntegerSet::from_slice(b);
             assert_eq!(diff, OrderedIntegerSet::from_slice(expected));
         }
         test(&[1, 12], &[], &[[1, 12]]);
@@ -605,7 +654,8 @@ mod tests {
     #[test]
     fn test_sub_integer_set() {
         fn test(a: &[[i32; 2]], b: &[[i32; 2]], expected: &[[i32; 2]]) {
-            let mut diff = OrderedIntegerSet::from_slice(a) - OrderedIntegerSet::from_slice(b);
+            let mut diff = OrderedIntegerSet::from_slice(a)
+                - OrderedIntegerSet::from_slice(b);
             diff.coalesce_intervals_inplace();
             assert_eq!(diff, OrderedIntegerSet::from_slice(expected));
         }
@@ -637,8 +687,14 @@ mod tests {
         ) {
             let s1 = ContiguousIntegerSet::new(a[0], a[1]);
             let s2 = OrderedIntegerSet::from_slice(b);
-            assert_eq!(s1.intersect(&s2), OrderedIntegerSet::from_slice(expected));
-            assert_eq!(s2.intersect(&s1), OrderedIntegerSet::from_slice(expected));
+            assert_eq!(
+                s1.intersect(&s2),
+                OrderedIntegerSet::from_slice(expected)
+            );
+            assert_eq!(
+                s2.intersect(&s1),
+                OrderedIntegerSet::from_slice(expected)
+            );
         }
         test(&[0usize, 10], &[[2, 5]], &[[2, 5]]);
         test(&[-3, 10], &[[-5, 12]], &[[-3, 10]]);

@@ -11,18 +11,22 @@ where
     F1: Fn() -> I,
     F2: Fn(T) -> (V, V, V), {
     let (weight_sum, num_weight_steps) =
-        kahan_sigma_return_counter(get_iter(), |x| get_a_b_weight(x).2.to_f64().unwrap());
+        kahan_sigma_return_counter(get_iter(), |x| {
+            get_a_b_weight(x).2.to_f64().unwrap()
+        });
 
-    let (weighted_sum_a, num_a_steps) = kahan_sigma_return_counter(get_iter(), |x| {
-        let (a, _, w) = get_a_b_weight(x);
-        a.to_f64().unwrap() * w.to_f64().unwrap()
-    });
+    let (weighted_sum_a, num_a_steps) =
+        kahan_sigma_return_counter(get_iter(), |x| {
+            let (a, _, w) = get_a_b_weight(x);
+            a.to_f64().unwrap() * w.to_f64().unwrap()
+        });
     let mean_a = weighted_sum_a / weight_sum;
 
-    let (weighted_sum_b, num_b_steps) = kahan_sigma_return_counter(get_iter(), |x| {
-        let (_, b, w) = get_a_b_weight(x);
-        b.to_f64().unwrap() * w.to_f64().unwrap()
-    });
+    let (weighted_sum_b, num_b_steps) =
+        kahan_sigma_return_counter(get_iter(), |x| {
+            let (_, b, w) = get_a_b_weight(x);
+            b.to_f64().unwrap() * w.to_f64().unwrap()
+        });
     let mean_b = weighted_sum_b / weight_sum;
 
     assert_eq!(
@@ -38,7 +42,9 @@ where
 
     let numerator = kahan_sigma(get_iter(), |x| {
         let (a, b, w) = get_a_b_weight(x);
-        (a.to_f64().unwrap() - mean_a) * (b.to_f64().unwrap() - mean_b) * w.to_f64().unwrap()
+        (a.to_f64().unwrap() - mean_a)
+            * (b.to_f64().unwrap() - mean_b)
+            * w.to_f64().unwrap()
     });
 
     let sqrt_a = kahan_sigma(get_iter(), |x| {
@@ -60,7 +66,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{iter::flat_zip::IntoFlatZipIter, stats::correlation::weighted_correlation};
+    use crate::{
+        iter::flat_zip::IntoFlatZipIter,
+        stats::correlation::weighted_correlation,
+    };
 
     const TOLERANCE: f64 = 1e-6;
 

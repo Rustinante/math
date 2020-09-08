@@ -2,8 +2,8 @@ use crate::{
     interval::traits::{CoalesceIntervals, Interval},
     search::binary_search::BinarySearch,
     set::{
-        contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
-        traits::Set,
+        contiguous_integer_set::ContiguousIntegerSet,
+        ordered_integer_set::OrderedIntegerSet, traits::Set,
     },
 };
 use num::{integer::Integer, traits::cast::ToPrimitive};
@@ -12,7 +12,9 @@ use std::{
     ops::{Sub, SubAssign},
 };
 
-impl<E: Integer + Copy + ToPrimitive> Sub<&ContiguousIntegerSet<E>> for ContiguousIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> Sub<&ContiguousIntegerSet<E>>
+    for ContiguousIntegerSet<E>
+{
     type Output = OrderedIntegerSet<E>;
 
     fn sub(self, rhs: &ContiguousIntegerSet<E>) -> Self::Output {
@@ -48,7 +50,9 @@ impl<E: Integer + Copy + ToPrimitive> Sub for ContiguousIntegerSet<E> {
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> Sub<&ContiguousIntegerSet<E>> for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> Sub<&ContiguousIntegerSet<E>>
+    for OrderedIntegerSet<E>
+{
     type Output = Self;
 
     #[inline]
@@ -100,7 +104,9 @@ impl<E: Integer + Copy + ToPrimitive> Sub<&ContiguousIntegerSet<E>> for OrderedI
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> Sub<ContiguousIntegerSet<E>> for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> Sub<ContiguousIntegerSet<E>>
+    for OrderedIntegerSet<E>
+{
     type Output = Self;
 
     #[inline]
@@ -109,20 +115,26 @@ impl<E: Integer + Copy + ToPrimitive> Sub<ContiguousIntegerSet<E>> for OrderedIn
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> SubAssign<&ContiguousIntegerSet<E>> for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> SubAssign<&ContiguousIntegerSet<E>>
+    for OrderedIntegerSet<E>
+{
     fn sub_assign(&mut self, rhs: &ContiguousIntegerSet<E>) {
         *self = self.to_owned() - rhs
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> SubAssign<ContiguousIntegerSet<E>> for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> SubAssign<ContiguousIntegerSet<E>>
+    for OrderedIntegerSet<E>
+{
     #[inline]
     fn sub_assign(&mut self, rhs: ContiguousIntegerSet<E>) {
         *self = self.to_owned() - &rhs
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>> for ContiguousIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>>
+    for ContiguousIntegerSet<E>
+{
     type Output = OrderedIntegerSet<E>;
 
     fn sub(self, rhs: &OrderedIntegerSet<E>) -> Self::Output {
@@ -134,7 +146,9 @@ impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>> for ContiguousI
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> Sub<OrderedIntegerSet<E>> for ContiguousIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> Sub<OrderedIntegerSet<E>>
+    for ContiguousIntegerSet<E>
+{
     type Output = OrderedIntegerSet<E>;
 
     #[inline]
@@ -143,7 +157,9 @@ impl<E: Integer + Copy + ToPrimitive> Sub<OrderedIntegerSet<E>> for ContiguousIn
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>> for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>>
+    for OrderedIntegerSet<E>
+{
     type Output = Self;
 
     fn sub(self, rhs: &OrderedIntegerSet<E>) -> Self::Output {
@@ -152,7 +168,8 @@ impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>> for OrderedInte
         let num_rhs_intervals = rhs.intervals.len();
         for interval in self.intervals.iter() {
             let mut fragments = vec![*interval];
-            while rhs_i < num_rhs_intervals && rhs.intervals[rhs_i].get_end() < interval.get_start()
+            while rhs_i < num_rhs_intervals
+                && rhs.intervals[rhs_i].get_end() < interval.get_start()
             {
                 rhs_i += 1;
             }
@@ -180,7 +197,9 @@ impl<E: Integer + Copy + ToPrimitive> Sub<&OrderedIntegerSet<E>> for OrderedInte
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> Sub<OrderedIntegerSet<E>> for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> Sub<OrderedIntegerSet<E>>
+    for OrderedIntegerSet<E>
+{
     type Output = Self;
 
     #[inline]
@@ -189,14 +208,18 @@ impl<E: Integer + Copy + ToPrimitive> Sub<OrderedIntegerSet<E>> for OrderedInteg
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> SubAssign<&OrderedIntegerSet<E>> for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> SubAssign<&OrderedIntegerSet<E>>
+    for OrderedIntegerSet<E>
+{
     #[inline]
     fn sub_assign(&mut self, rhs: &OrderedIntegerSet<E>) {
         *self = self.to_owned() - rhs
     }
 }
 
-impl<E: Integer + Copy + ToPrimitive> SubAssign<OrderedIntegerSet<E>> for OrderedIntegerSet<E> {
+impl<E: Integer + Copy + ToPrimitive> SubAssign<OrderedIntegerSet<E>>
+    for OrderedIntegerSet<E>
+{
     #[inline]
     fn sub_assign(&mut self, rhs: OrderedIntegerSet<E>) {
         *self = self.to_owned() - &rhs
@@ -206,7 +229,8 @@ impl<E: Integer + Copy + ToPrimitive> SubAssign<OrderedIntegerSet<E>> for Ordere
 #[cfg(test)]
 mod tests {
     use crate::set::{
-        contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
+        contiguous_integer_set::ContiguousIntegerSet,
+        ordered_integer_set::OrderedIntegerSet,
     };
 
     #[test]
@@ -214,7 +238,8 @@ mod tests {
         macro_rules! test {
             ($a:expr, $b:expr, $c:expr, $d:expr, $expected:expr) => {
                 assert_eq!(
-                    ContiguousIntegerSet::new($a, $b) - ContiguousIntegerSet::new($c, $d),
+                    ContiguousIntegerSet::new($a, $b)
+                        - ContiguousIntegerSet::new($c, $d),
                     OrderedIntegerSet::from_slice($expected)
                 );
             };
@@ -241,7 +266,8 @@ mod tests {
         macro_rules! test {
             ($ordered:expr, $a:expr, $b:expr, $expected:expr) => {
                 assert_eq!(
-                    OrderedIntegerSet::from_slice($ordered) - ContiguousIntegerSet::new($a, $b),
+                    OrderedIntegerSet::from_slice($ordered)
+                        - ContiguousIntegerSet::new($a, $b),
                     OrderedIntegerSet::from_slice($expected)
                 );
             };

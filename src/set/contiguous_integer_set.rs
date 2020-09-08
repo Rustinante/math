@@ -39,7 +39,10 @@ impl<E: Integer + Copy> ContiguousIntegerSet<E> {
     }
 
     #[inline]
-    pub fn slice<'a, I: Slicing<&'a ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>>>(
+    pub fn slice<
+        'a,
+        I: Slicing<&'a ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>>,
+    >(
         &'a self,
         slicer: I,
     ) -> Option<ContiguousIntegerSet<E>> {
@@ -84,11 +87,19 @@ impl<E: Integer + Copy> Interval<E> for ContiguousIntegerSet<E> {
     }
 }
 
-impl<E: Integer + Copy> Intersect<&ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>>
+impl<E: Integer + Copy>
+    Intersect<&ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>>
     for ContiguousIntegerSet<E>
 {
-    fn intersect(&self, other: &ContiguousIntegerSet<E>) -> Option<ContiguousIntegerSet<E>> {
-        if self.is_empty() || other.is_empty() || other.end < self.start || other.start > self.end {
+    fn intersect(
+        &self,
+        other: &ContiguousIntegerSet<E>,
+    ) -> Option<ContiguousIntegerSet<E>> {
+        if self.is_empty()
+            || other.is_empty()
+            || other.end < self.start
+            || other.start > self.end
+        {
             None
         } else {
             Some(ContiguousIntegerSet::new(
@@ -98,7 +109,10 @@ impl<E: Integer + Copy> Intersect<&ContiguousIntegerSet<E>, Option<ContiguousInt
         }
     }
 
-    fn has_non_empty_intersection_with(&self, other: &ContiguousIntegerSet<E>) -> bool {
+    fn has_non_empty_intersection_with(
+        &self,
+        other: &ContiguousIntegerSet<E>,
+    ) -> bool {
         self.intersect(other).is_some()
     }
 }
@@ -115,7 +129,9 @@ impl<E: Integer + Copy> Coalesce<Self> for ContiguousIntegerSet<E> {
         } else if other.is_empty() {
             Some(*self)
         } else {
-            if self.start > other.end + E::one() || self.end + E::one() < other.start {
+            if self.start > other.end + E::one()
+                || self.end + E::one() < other.start
+            {
                 None
             } else {
                 Some(ContiguousIntegerSet::new(
@@ -137,11 +153,15 @@ impl<E: Integer + Copy + ToPrimitive> Finite for ContiguousIntegerSet<E> {
     }
 }
 
-impl<E> Slicing<&ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>> for Range<usize>
+impl<E> Slicing<&ContiguousIntegerSet<E>, Option<ContiguousIntegerSet<E>>>
+    for Range<usize>
 where
     E: Integer + Copy + FromPrimitive + ToPrimitive,
 {
-    fn slice(self, input: &ContiguousIntegerSet<E>) -> Option<ContiguousIntegerSet<E>> {
+    fn slice(
+        self,
+        input: &ContiguousIntegerSet<E>,
+    ) -> Option<ContiguousIntegerSet<E>> {
         if self.start >= self.end || self.start >= input.size() {
             None
         } else {
@@ -184,17 +204,29 @@ where
             Some(intersection) => {
                 let mut refinement = Vec::new();
                 if a < intersection.start {
-                    refinement.push(ContiguousIntegerSet::new(a, intersection.start - E::one()));
+                    refinement.push(ContiguousIntegerSet::new(
+                        a,
+                        intersection.start - E::one(),
+                    ));
                 }
                 if c < intersection.start {
-                    refinement.push(ContiguousIntegerSet::new(c, intersection.start - E::one()));
+                    refinement.push(ContiguousIntegerSet::new(
+                        c,
+                        intersection.start - E::one(),
+                    ));
                 }
                 refinement.push(intersection);
                 if b > intersection.end {
-                    refinement.push(ContiguousIntegerSet::new(intersection.end + E::one(), b));
+                    refinement.push(ContiguousIntegerSet::new(
+                        intersection.end + E::one(),
+                        b,
+                    ));
                 }
                 if d > intersection.end {
-                    refinement.push(ContiguousIntegerSet::new(intersection.end + E::one(), d));
+                    refinement.push(ContiguousIntegerSet::new(
+                        intersection.end + E::one(),
+                        d,
+                    ));
                 }
                 refinement
             }
@@ -219,21 +251,28 @@ impl<E: Integer + Copy> Coalesce<E> for ContiguousIntegerSet<E> {
     }
 }
 
-/// An iterator that iterates through the integers in the contiguous integer set.
+/// An iterator that iterates through the integers in the contiguous integer
+/// set.
 pub struct ContiguousIntegerSetIter<E: Integer + Copy> {
     contiguous_integer_set: ContiguousIntegerSet<E>,
     current: E,
 }
 
-impl<E: Integer + Copy> ToIterator<'_, ContiguousIntegerSetIter<E>, E> for ContiguousIntegerSet<E> {
+impl<E: Integer + Copy> ToIterator<'_, ContiguousIntegerSetIter<E>, E>
+    for ContiguousIntegerSet<E>
+{
     #[inline]
     fn to_iter(&self) -> ContiguousIntegerSetIter<E> {
         ContiguousIntegerSetIter::from(*self)
     }
 }
 
-impl<E: Integer + Copy> From<ContiguousIntegerSet<E>> for ContiguousIntegerSetIter<E> {
-    fn from(contiguous_integer_set: ContiguousIntegerSet<E>) -> ContiguousIntegerSetIter<E> {
+impl<E: Integer + Copy> From<ContiguousIntegerSet<E>>
+    for ContiguousIntegerSetIter<E>
+{
+    fn from(
+        contiguous_integer_set: ContiguousIntegerSet<E>,
+    ) -> ContiguousIntegerSetIter<E> {
         ContiguousIntegerSetIter {
             contiguous_integer_set,
             current: E::zero(),
@@ -257,23 +296,43 @@ impl<E: Integer + Copy> Iterator for ContiguousIntegerSetIter<E> {
 
 #[cfg(test)]
 mod tests {
-    use crate::set::{contiguous_integer_set::ContiguousIntegerSet, traits::Intersect};
+    use crate::set::{
+        contiguous_integer_set::ContiguousIntegerSet, traits::Intersect,
+    };
 
     #[test]
     fn test_ord() {
-        assert!(ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(3, 4));
-        assert!(ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(3, 5));
-        assert!(ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(3, 8));
-        assert!(ContiguousIntegerSet::new(2, 3) < ContiguousIntegerSet::new(4, 5));
-        assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(2, 4));
-        assert!(ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(2, 8));
+        assert!(
+            ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(3, 4)
+        );
+        assert!(
+            ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(3, 5)
+        );
+        assert!(
+            ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(3, 8)
+        );
+        assert!(
+            ContiguousIntegerSet::new(2, 3) < ContiguousIntegerSet::new(4, 5)
+        );
+        assert!(
+            ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(2, 4)
+        );
+        assert!(
+            ContiguousIntegerSet::new(2, 5) < ContiguousIntegerSet::new(2, 8)
+        );
         assert_eq!(
             ContiguousIntegerSet::new(2, 2),
             ContiguousIntegerSet::new(2, 2)
         );
-        assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 8));
-        assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 5));
-        assert!(ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 3));
+        assert!(
+            ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 8)
+        );
+        assert!(
+            ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 5)
+        );
+        assert!(
+            ContiguousIntegerSet::new(2, 5) > ContiguousIntegerSet::new(1, 3)
+        );
     }
 
     #[test]

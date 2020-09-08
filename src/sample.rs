@@ -14,7 +14,10 @@ pub trait Sample<'a, I: Iterator<Item = E>, E, O: Collecting<E> + Default>:
     /// samples `size` elements without replacement
     /// `size`: the number of samples to be drawn
     /// returns Err if `size` is larger than the population size
-    fn sample_subset_without_replacement<'s: 'a>(&'s self, size: usize) -> Result<O, String> {
+    fn sample_subset_without_replacement<'s: 'a>(
+        &'s self,
+        size: usize,
+    ) -> Result<O, String> {
         let mut remaining = self.size();
         if size > remaining {
             return Err(format!(
@@ -37,10 +40,15 @@ pub trait Sample<'a, I: Iterator<Item = E>, E, O: Collecting<E> + Default>:
         Ok(samples)
     }
 
-    fn sample_with_replacement<'s: 'a>(&'s self, size: usize) -> Result<O, String> {
+    fn sample_with_replacement<'s: 'a>(
+        &'s self,
+        size: usize,
+    ) -> Result<O, String> {
         let population_size = self.size();
         if population_size == 0 {
-            return Err("cannot sample from a population of 0 elements".to_string());
+            return Err(
+                "cannot sample from a population of 0 elements".to_string()
+            );
         }
         let mut samples = O::default();
         let mut rng = rand::thread_rng();
@@ -59,8 +67,8 @@ pub trait Sample<'a, I: Iterator<Item = E>, E, O: Collecting<E> + Default>:
 #[cfg(test)]
 mod tests {
     use crate::set::{
-        contiguous_integer_set::ContiguousIntegerSet, ordered_integer_set::OrderedIntegerSet,
-        traits::Finite,
+        contiguous_integer_set::ContiguousIntegerSet,
+        ordered_integer_set::OrderedIntegerSet, traits::Finite,
     };
 
     use super::Sample;
@@ -74,9 +82,11 @@ mod tests {
             .unwrap();
         assert_eq!(samples.size(), num_samples);
 
-        let set = OrderedIntegerSet::from_slice(&[[-89, -23], [-2, 100], [300, 345]]);
+        let set =
+            OrderedIntegerSet::from_slice(&[[-89, -23], [-2, 100], [300, 345]]);
         let num_samples = 18;
-        let samples = set.sample_subset_without_replacement(num_samples).unwrap();
+        let samples =
+            set.sample_subset_without_replacement(num_samples).unwrap();
         assert_eq!(samples.size(), num_samples);
     }
 

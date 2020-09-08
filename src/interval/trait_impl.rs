@@ -2,7 +2,9 @@ use num::Integer;
 
 use crate::interval::traits::{Coalesce, CoalesceIntervals, Interval};
 
-impl<I: Coalesce<I> + Interval<E> + Clone, E: Integer + Copy> CoalesceIntervals<I, E> for Vec<I> {
+impl<I: Coalesce<I> + Interval<E> + Clone, E: Integer + Copy>
+    CoalesceIntervals<I, E> for Vec<I>
+{
     fn to_coalesced_intervals(&self) -> Vec<I> {
         let mut intervals: Vec<I> = self.to_vec();
         intervals.coalesce_intervals_inplace();
@@ -15,10 +17,12 @@ impl<I: Coalesce<I> + Interval<E> + Clone, E: Integer + Copy> CoalesceIntervals<
         for interval in self.drain(..) {
             match coalesced_intervals.last_mut() {
                 None => coalesced_intervals.push(interval),
-                Some(last_interval) => match last_interval.coalesce_with(&interval) {
-                    None => coalesced_intervals.push(interval),
-                    Some(new_interval) => *last_interval = new_interval,
-                },
+                Some(last_interval) => {
+                    match last_interval.coalesce_with(&interval) {
+                        None => coalesced_intervals.push(interval),
+                        Some(new_interval) => *last_interval = new_interval,
+                    }
+                }
             }
         }
         *self = coalesced_intervals;

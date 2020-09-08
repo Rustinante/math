@@ -19,7 +19,9 @@ pub struct OrderedIntervalPartitions<E: Integer + Copy> {
 }
 
 impl<E: Integer + Copy> OrderedIntervalPartitions<E> {
-    pub fn from_vec(mut partitions: Vec<ContiguousIntegerSet<E>>) -> OrderedIntervalPartitions<E> {
+    pub fn from_vec(
+        mut partitions: Vec<ContiguousIntegerSet<E>>,
+    ) -> OrderedIntervalPartitions<E> {
         partitions.sort_by_key(|p| p.get_start());
         OrderedIntervalPartitions {
             partitions,
@@ -44,16 +46,24 @@ impl<E: Integer + Copy> OrderedIntervalPartitions<E> {
         )
     }
 
-    /// returns the number of partitions that intersect with the `other`'s partitions
-    pub fn num_partitions_overlapped_by(&self, other: &OrderedIntervalPartitions<E>) -> usize {
+    /// returns the number of partitions that intersect with the `other`'s
+    /// partitions
+    pub fn num_partitions_overlapped_by(
+        &self,
+        other: &OrderedIntervalPartitions<E>,
+    ) -> usize {
         let rhs_len = other.num_partitions();
         let mut j = 0;
         let mut num_overlaps = 0;
         for interval in self.partitions.iter() {
-            while j < rhs_len && other.partitions[j].get_end() < interval.get_start() {
+            while j < rhs_len
+                && other.partitions[j].get_end() < interval.get_start()
+            {
                 j += 1;
             }
-            while j < rhs_len && other.partitions[j].get_start() <= interval.get_end() {
+            while j < rhs_len
+                && other.partitions[j].get_start() <= interval.get_end()
+            {
                 let rhs_interval = &other.partitions[j];
                 if interval.intersect(&rhs_interval).is_some() {
                     num_overlaps += 1;
@@ -95,7 +105,8 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntervalPartitions<E> {
     }
 }
 
-impl<E: Integer + Copy + Hash> SubsetIndexable<ContiguousIntegerSet<E>, ContiguousIntegerSet<E>>
+impl<E: Integer + Copy + Hash>
+    SubsetIndexable<ContiguousIntegerSet<E>, ContiguousIntegerSet<E>>
     for OrderedIntervalPartitions<E>
 {
     #[inline]
@@ -137,12 +148,16 @@ impl<E: Integer + Copy + Hash> OrderedIntervalPartitions<E> {
     }
 }
 
-impl<E: Integer + Copy> Refineable<OrderedIntervalPartitions<E>> for OrderedIntervalPartitions<E> {
+impl<E: Integer + Copy> Refineable<OrderedIntervalPartitions<E>>
+    for OrderedIntervalPartitions<E>
+{
     /// # Example
     /// ```
     /// use math::{
     ///     partition::ordered_interval_partitions::OrderedIntervalPartitions,
-    ///     set::{contiguous_integer_set::ContiguousIntegerSet, traits::Refineable},
+    ///     set::{
+    ///         contiguous_integer_set::ContiguousIntegerSet, traits::Refineable,
+    ///     },
     /// };
     /// let p1 = OrderedIntervalPartitions::from_slice(&[[-1, 4], [8, 10]]);
     /// let p2 = OrderedIntervalPartitions::from_slice(&[[3, 7]]);
@@ -241,7 +256,9 @@ mod tests {
 
     use crate::{
         partition::ordered_interval_partitions::OrderedIntervalPartitions,
-        set::{contiguous_integer_set::ContiguousIntegerSet, traits::Refineable},
+        set::{
+            contiguous_integer_set::ContiguousIntegerSet, traits::Refineable,
+        },
     };
 
     #[test]
@@ -324,7 +341,11 @@ mod tests {
 
     #[test]
     fn test_num_overlapped_partitions_by() {
-        fn test<E: Integer + Copy + std::fmt::Debug>(a: &[[E; 2]], b: &[[E; 2]], expected: usize) {
+        fn test<E: Integer + Copy + std::fmt::Debug>(
+            a: &[[E; 2]],
+            b: &[[E; 2]],
+            expected: usize,
+        ) {
             let s1 = OrderedIntervalPartitions::from_slice(a);
             let s2 = OrderedIntervalPartitions::from_slice(b);
             assert_eq!(s1.num_partitions_overlapped_by(&s2), expected);

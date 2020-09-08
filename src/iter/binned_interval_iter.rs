@@ -10,7 +10,8 @@ use crate::{
 use num::{FromPrimitive, Num};
 use std::cmp::Ordering;
 
-/// The value of the associated with `Min` and `Max` are the initial min and max values.
+/// The value of the associated with `Min` and `Max` are the initial min and max
+/// values.
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum AggregateOp {
     Max,
@@ -26,7 +27,9 @@ where
         self,
         bin_size: i64,
         aggregate_op: AggregateOp,
-        interval_value_extractor: Box<dyn Fn(<Self as Iterator>::Item) -> (I64Interval, V)>,
+        interval_value_extractor: Box<
+            dyn Fn(<Self as Iterator>::Item) -> (I64Interval, V),
+        >,
     ) -> BinnedIntervalIter<Self, V>;
 }
 
@@ -39,9 +42,16 @@ where
         self,
         bin_size: i64,
         aggregate_op: AggregateOp,
-        interval_value_extractor: Box<dyn Fn(<I as Iterator>::Item) -> (I64Interval, V)>,
+        interval_value_extractor: Box<
+            dyn Fn(<I as Iterator>::Item) -> (I64Interval, V),
+        >,
     ) -> BinnedIntervalIter<Self, V> {
-        BinnedIntervalIter::new(self, bin_size, aggregate_op, interval_value_extractor)
+        BinnedIntervalIter::new(
+            self,
+            bin_size,
+            aggregate_op,
+            interval_value_extractor,
+        )
     }
 }
 
@@ -49,13 +59,13 @@ where
 /// returns a value for each bin that intersects one or more intervals from
 /// the original iterator `iter`, where the value at each intersection is
 /// obtained by applying the operation specified by the `aggregate_op` for
-/// all the overlapping intervals and their associated values, where the value of each
-/// overlapping interval is multiplied by the length of the interval if the `aggregate_op`
-/// is `Sum`.
+/// all the overlapping intervals and their associated values, where the value
+/// of each overlapping interval is multiplied by the length of the interval if
+/// the `aggregate_op` is `Sum`.
 ///
 /// # Panics
-/// The iterator will panic if the intervals returned by the original `iter` are not
-/// disjoint or increasing.
+/// The iterator will panic if the intervals returned by the original `iter` are
+/// not disjoint or increasing.
 ///
 /// # Example
 /// ```
@@ -133,7 +143,8 @@ where
     iter: I,
     bin_size: i64,
     aggregate_op: AggregateOp,
-    iter_item_interval_value_extractor: Box<dyn Fn(<I as Iterator>::Item) -> (I64Interval, V)>,
+    iter_item_interval_value_extractor:
+        Box<dyn Fn(<I as Iterator>::Item) -> (I64Interval, V)>,
     current_interval_val: Option<(I64Interval, V)>,
     current_bin: Option<I64Interval>,
 }
@@ -147,7 +158,9 @@ where
         mut iter: I,
         bin_size: i64,
         aggregate_op: AggregateOp,
-        iter_item_interval_value_extractor: Box<dyn Fn(<I as Iterator>::Item) -> (I64Interval, V)>,
+        iter_item_interval_value_extractor: Box<
+            dyn Fn(<I as Iterator>::Item) -> (I64Interval, V),
+        >,
     ) -> Self {
         assert!(bin_size >= 1, "bin_size must be at least 1");
         let current_interval_val = iter
@@ -172,14 +185,17 @@ where
     type Item = (I64Interval, V);
 
     /// After every iteration, `self.current_bin` can be
-    /// * `None`: indicating that the current interval has not been processed at all
+    /// * `None`: indicating that the current interval has not been processed at
+    ///   all
     /// * `Some`: indicating the last used bin
     ///
     /// and `self.current_interval_val` can be
     /// * `None`: indicating that all the intervals have been processed
-    /// * `Some`: indicating that the current interval still has unprocessed elements
+    /// * `Some`: indicating that the current interval still has unprocessed
+    ///   elements
     ///
-    /// # panics: if the intervals returned by the original `iter` are not disjoint or increasing.
+    /// # panics: if the intervals returned by the original `iter` are not
+    /// disjoint or increasing.
     fn next(&mut self) -> Option<Self::Item> {
         let current_interval = &self.current_interval_val;
         match current_interval {
@@ -194,7 +210,8 @@ where
                     (interval_start / self.bin_size) * self.bin_size
                 } else {
                     // take the ceiling towards the negative direction
-                    ((interval_start - (self.bin_size - 1)) / self.bin_size) * self.bin_size
+                    ((interval_start - (self.bin_size - 1)) / self.bin_size)
+                        * self.bin_size
                 };
 
                 let bin_start = match self.current_bin {
@@ -211,7 +228,8 @@ where
                     }
                 };
                 let bin_end_inclusive = bin_start + self.bin_size - 1;
-                self.current_bin = Some(I64Interval::new(bin_start, bin_end_inclusive));
+                self.current_bin =
+                    Some(I64Interval::new(bin_start, bin_end_inclusive));
 
                 loop {
                     aggregate = match self.aggregate_op {
@@ -247,11 +265,12 @@ where
                     // Either the interval is contained in the bin
                     // or it extends rightwards beyond the bin.
                     if interval_end_inclusive <= bin_end_inclusive {
-                        // If it is contained in the bin, we will get the next interval.
-                        self.current_interval_val = self
-                            .iter
-                            .next()
-                            .map(|item| (self.iter_item_interval_value_extractor)(item));
+                        // If it is contained in the bin, we will get the next
+                        // interval.
+                        self.current_interval_val =
+                            self.iter.next().map(|item| {
+                                (self.iter_item_interval_value_extractor)(item)
+                            });
                         match self.current_interval_val {
                             None => {
                                 break;
@@ -271,8 +290,10 @@ where
                             }
                         };
                     } else {
-                        // Otherwise, the current bin has received all the information
-                        // from the intersecting intervals and is ready to be returned.
+                        // Otherwise, the current bin has received all the
+                        // information
+                        // from the intersecting intervals and is ready to be
+                        // returned.
                         break;
                     }
                 }

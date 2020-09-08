@@ -30,7 +30,9 @@ impl<I: Iterator> Iterator for FlatZipIter<I> {
         match self
             .iters
             .iter_mut()
-            .map(|i| i.next().map_or_else(|| Err("None encountered"), |x| Ok(x)))
+            .map(|i| {
+                i.next().map_or_else(|| Err("None encountered"), |x| Ok(x))
+            })
             .collect::<Result<Self::Item, &str>>()
         {
             Err(_) => None,
@@ -48,7 +50,8 @@ mod tests {
         let arr1 = vec![1, 2, 3];
         let arr2 = vec![4, 5, 6];
         let arr3 = vec![7, 8, 9];
-        let expected_1 = vec![vec![&1, &4, &7], vec![&2, &5, &8], vec![&3, &6, &9]];
+        let expected_1 =
+            vec![vec![&1, &4, &7], vec![&2, &5, &8], vec![&3, &6, &9]];
         for (i1, i2) in arr1
             .iter()
             .flat_zip(arr2.iter())
@@ -58,9 +61,10 @@ mod tests {
             assert_eq!(i1, i2);
         }
 
-        let expected_2 = vec![vec![&1, &4, &7, &10], vec![&2, &5, &8, &11], vec![
-            &3, &6, &9, &12,
-        ]];
+        let expected_2 =
+            vec![vec![&1, &4, &7, &10], vec![&2, &5, &8, &11], vec![
+                &3, &6, &9, &12,
+            ]];
         let arr4 = vec![10, 11, 12, 13];
         for (i1, i2) in arr1
             .iter()

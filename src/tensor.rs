@@ -3,13 +3,18 @@
 use num::ToPrimitive;
 use std::{collections::HashSet, iter::FromIterator};
 
-/// The implementer can be viewed as a tensor of `shape` through the `as_shape` method.
-/// The resulting `EphemeralView` cannot outlive the original data struct.
+/// The implementer can be viewed as a tensor of `shape` through the `as_shape`
+/// method. The resulting `EphemeralView` cannot outlive the original data
+/// struct.
 pub trait ToView<'a, Dtype> {
-    fn as_shape<S: Into<TensorShape>>(&'a self, shape: S) -> EphemeralView<'a, Dtype>;
+    fn as_shape<S: Into<TensorShape>>(
+        &'a self,
+        shape: S,
+    ) -> EphemeralView<'a, Dtype>;
 }
 
-/// The implementer can be converted into a Tensor struct with the specified `shape`.
+/// The implementer can be converted into a Tensor struct with the specified
+/// `shape`.
 pub trait IntoTensor<Dtype> {
     fn into_tensor<S: Into<TensorShape>>(self, shape: S) -> Tensor<Dtype>;
 }
@@ -27,14 +32,17 @@ pub trait ShapableData<Dtype> {
 
     /// Reverses the axes.
     fn t(&self) -> EphemeralView<Dtype> {
-        let transposed_axes: Vec<usize> = (0..self.shape().ndim()).into_iter().rev().collect();
+        let transposed_axes: Vec<usize> =
+            (0..self.shape().ndim()).into_iter().rev().collect();
         let shape_transpose = self.shape().to_transposed(transposed_axes);
         self.data().as_shape(shape_transpose)
     }
 
     /// # Arguments
-    /// * `axes` - Must be the same length as `self.shape().ndim()`. For each `i`, `axes[i] = j`
-    /// means that the original `j`-th axis will be at the `i`-th axis in the new shape.
+    /// * `axes` - Must be the same length as `self.shape().ndim()`. For each
+    ///   `i`, `axes[i] = j`
+    /// means that the original `j`-th axis will be at the `i`-th axis in the
+    /// new shape.
     fn transpose(&self, axes: Vec<usize>) -> EphemeralView<Dtype> {
         self.data().as_shape(self.shape().to_transposed(axes))
     }
@@ -49,7 +57,8 @@ pub type Stride = isize;
 /// ```
 /// use math::tensor::{IntoTensor, ShapableData};
 ///
-/// let tensor = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].into_tensor([3, 4]);
+/// let tensor =
+///     vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].into_tensor([3, 4]);
 /// assert_eq!(tensor.shape().ndim(), 2);
 /// assert_eq!(tensor.shape().dims(), vec![3, 4]);
 /// ```
@@ -75,7 +84,10 @@ impl<Dtype> ShapableData<Dtype> for Tensor<Dtype> {
 }
 
 impl<'a, Dtype> ToView<'a, Dtype> for Tensor<Dtype> {
-    fn as_shape<S: Into<TensorShape>>(&'a self, shape: S) -> EphemeralView<'a, Dtype> {
+    fn as_shape<S: Into<TensorShape>>(
+        &'a self,
+        shape: S,
+    ) -> EphemeralView<'a, Dtype> {
         let target_shape: TensorShape = shape.into();
         assert_eq!(
             target_shape.num_elements(),
@@ -128,10 +140,11 @@ impl<'a, Dtype> From<&'a Tensor<Dtype>> for EphemeralView<'a, Dtype> {
     }
 }
 
-/// The shape of an N-dimensional tensor has a size for each dimension, with an associated stride,
-/// e.g., a row-major 3 x 5 matrix will have a stride of 5 for the dimension of size 3 and a stride
-/// of 1 for the dimension of size 5, and the resulting `dims_strides` is `[(3, 5), (5, 1)]`.
-/// Index 0 of `dims_strides` always refers to the leftmost dimension.
+/// The shape of an N-dimensional tensor has a size for each dimension, with an
+/// associated stride, e.g., a row-major 3 x 5 matrix will have a stride of 5
+/// for the dimension of size 3 and a stride of 1 for the dimension of size 5,
+/// and the resulting `dims_strides` is `[(3, 5), (5, 1)]`. Index 0 of
+/// `dims_strides` always refers to the leftmost dimension.
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct TensorShape {
     dims_strides: Vec<(Length, Stride)>,
@@ -174,7 +187,8 @@ impl TensorShape {
             self.dims_strides.len(),
             "all axes must be distinct"
         );
-        let dims_strides = axes.into_iter().map(|i| self.dims_strides[i]).collect();
+        let dims_strides =
+            axes.into_iter().map(|i| self.dims_strides[i]).collect();
         TensorShape {
             dims_strides,
         }
@@ -182,7 +196,10 @@ impl TensorShape {
 }
 
 impl<'a, Dtype> ToView<'a, Dtype> for Vec<Dtype> {
-    fn as_shape<S: Into<TensorShape>>(&'a self, shape: S) -> EphemeralView<'a, Dtype> {
+    fn as_shape<S: Into<TensorShape>>(
+        &'a self,
+        shape: S,
+    ) -> EphemeralView<'a, Dtype> {
         let target_shape: TensorShape = shape.into();
         assert_eq!(
             target_shape.num_elements(),
@@ -381,7 +398,11 @@ mod tests {
         macro_rules! check_from_iter {
             ($iter:expr) => {
                 let tensor_shape = TensorShape::from($iter);
-                assert_eq!(tensor_shape.dims_strides, vec![(3, 10), (2, 5), (5, 1)]);
+                assert_eq!(tensor_shape.dims_strides, vec![
+                    (3, 10),
+                    (2, 5),
+                    (5, 1)
+                ]);
             };
         }
         check_from_iter!(vec![3i32, 2, 5]);
