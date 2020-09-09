@@ -14,6 +14,11 @@ pub trait IntoUnionZip<'a, K, M> {
     fn into_union_zip(self, other: &'a M) -> UnionZipped<'a, K, M>;
 }
 
+/// Could be useful as the `init` argument in a `fold` operation.
+pub trait AsUnionZipped<'a, K, M> {
+    fn as_union_zipped(&'a self) -> UnionZipped<'a, K, M>;
+}
+
 pub struct UnionZipped<'a, K, M> {
     keys: Vec<K>,
     maps: Vec<&'a M>,
@@ -90,6 +95,20 @@ where
         UnionZipped {
             keys,
             maps,
+        }
+    }
+}
+
+impl<'a, K, V> AsUnionZipped<'a, K, HashMap<K, V>> for HashMap<K, V>
+where
+    K: Clone + Ord,
+{
+    fn as_union_zipped(&'a self) -> UnionZipped<'a, K, HashMap<K, V>> {
+        let mut keys: Vec<K> = self.keys().cloned().collect();
+        keys.sort();
+        UnionZipped {
+            keys,
+            maps: vec![&self],
         }
     }
 }
@@ -240,5 +259,13 @@ mod tests {
             iter3.next()
         );
         assert_eq!(None, iter3.next());
+    }
+
+    #[test]
+    fn test_as_union_zipped() {
+        let m: HashMap<i32, i32> =
+            vec![(2, 10), (3, 0), (4, 1)].into_iter().collect();
+        let union_zipped = m.as_union_zipped();
+        assert_eq!(union_zipped.maps[0], &m);
     }
 }
