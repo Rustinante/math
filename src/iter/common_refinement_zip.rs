@@ -58,6 +58,32 @@ where
             phantom: PhantomData,
         }
     }
+
+    fn into_common_refinement_zipped(
+        mut self,
+    ) -> CommonRefinementZipped<B, Self, X, P, V> {
+        let extractor = self.get_interval_value_extractor();
+        let mut intervals = Vec::new();
+        let mut values = Vec::new();
+        match self.next() {
+            None => {
+                intervals.push(None);
+                values.push(None);
+            }
+            Some(x) => {
+                let (interval, value) = extractor(x);
+                intervals.push(Some(interval));
+                values.push(Some(value));
+            }
+        }
+        CommonRefinementZipped {
+            iters: vec![self],
+            intervals,
+            values,
+            extractor,
+            phantom: PhantomData,
+        }
+    }
 }
 
 /// # Example
