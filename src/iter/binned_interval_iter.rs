@@ -14,6 +14,7 @@ use std::cmp::Ordering;
 /// values.
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum AggregateOp {
+    Average,
     Max,
     Min,
     Sum,
@@ -84,9 +85,26 @@ where
 /// // -1 | 0 1  |   ...   |        |              | +2
 /// //    |      |   ...   |     14 | 15 16 17     | -1
 /// //---------------------------------------------
+/// // 0.4|| 0.8 ||  ...   || -0.2 || -0.6          | bin average
 /// //  2 || 4   ||  ...   || -1   || -3          | bin sum
 /// //  2 || 2   ||  ...   || -1   || -1          | bin max
 /// //  2 || 2   ||  ...   || -1   || -1          | bin min
+/// assert_eq!(
+///     interval_map
+///         .iter()
+///         .into_binned_interval_iter(
+///             bin_size,
+///             AggregateOp::Average,
+///             Box::new(|(&interval, &val)| (interval, val as f64))
+///         )
+///         .collect::<Vec<(I64Interval, f64)>>(),
+///     vec![
+///         (I64Interval::new(-5, -1), 0.4),
+///         (I64Interval::new(0, 4), 0.8),
+///         (I64Interval::new(10, 14), -0.2),
+///         (I64Interval::new(15, 19), -0.6),
+///     ]
+/// );
 /// assert_eq!(
 ///     interval_map
 ///         .iter()
@@ -230,6 +248,7 @@ where
                 let bin_end_inclusive = bin_start + self.bin_size - 1;
                 self.current_bin =
                     Some(I64Interval::new(bin_start, bin_end_inclusive));
+                let bin_size_denominator = V::from_i64(self.bin_size).unwrap();
 
                 loop {
                     aggregate = match self.aggregate_op {
@@ -257,6 +276,18 @@ where
                                             .map_or_else(|| 0, |i| i.size()),
                                     )
                                     .unwrap(),
+                        ),
+                        AggregateOp::Average => Some(
+                            aggregate.unwrap_or(V::zero())
+                                + val
+                                    * (V::from_usize(
+                                        self.current_bin
+                                            .unwrap()
+                                            .intersect(&interval)
+                                            .map_or_else(|| 0, |i| i.size()),
+                                    )
+                                    .unwrap()
+                                        / bin_size_denominator),
                         ),
                     };
 
