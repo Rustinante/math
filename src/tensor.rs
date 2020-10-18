@@ -3,6 +3,10 @@
 use num::ToPrimitive;
 use std::{collections::HashSet, iter::FromIterator};
 
+pub mod tensor_iter;
+
+pub use tensor_iter::TensorIter;
+
 /// The implementer can be viewed as a tensor of `shape` through the `as_shape`
 /// method. The resulting `EphemeralView` cannot outlive the original data
 /// struct.
@@ -32,7 +36,7 @@ pub trait ShapableData<Dtype> {
 
     /// Reverses the axes.
     fn t(&self) -> EphemeralView<Dtype> {
-        let transposed_axes: Vec<usize> =
+        let transposed_axes: Vec<AxisIndex> =
             (0..self.shape().ndim()).into_iter().rev().collect();
         let shape_transpose = self.shape().to_transposed(transposed_axes);
         self.data().as_shape(shape_transpose)
@@ -43,13 +47,14 @@ pub trait ShapableData<Dtype> {
     ///   `i`, `axes[i] = j`
     /// means that the original `j`-th axis will be at the `i`-th axis in the
     /// new shape.
-    fn transpose(&self, axes: Vec<usize>) -> EphemeralView<Dtype> {
+    fn transpose(&self, axes: Vec<AxisIndex>) -> EphemeralView<Dtype> {
         self.data().as_shape(self.shape().to_transposed(axes))
     }
 }
 
-pub type Length = usize;
-pub type Stride = isize;
+pub type AxisIndex = usize;
+pub type Length = i64;
+pub type Stride = i64;
 
 /// # An N-dimensional Tensor
 ///
@@ -168,13 +173,15 @@ impl TensorShape {
 
     pub fn num_elements(&self) -> usize {
         if self.dims_strides.len() > 0 {
-            self.dims_strides.iter().fold(1, |acc, &(d, _)| acc * d)
+            self.dims_strides
+                .iter()
+                .fold(1, |acc, &(d, _)| acc * d as usize)
         } else {
             0
         }
     }
 
-    fn to_transposed(&self, axes: Vec<usize>) -> TensorShape {
+    fn to_transposed(&self, axes: Vec<AxisIndex>) -> TensorShape {
         assert_eq!(
             axes.len(),
             self.dims_strides.len(),
@@ -183,7 +190,7 @@ impl TensorShape {
             self.dims_strides.len()
         );
         assert_eq!(
-            HashSet::<usize>::from_iter(axes.clone().into_iter()).len(),
+            HashSet::<AxisIndex>::from_iter(axes.clone().into_iter()).len(),
             self.dims_strides.len(),
             "all axes must be distinct"
         );
@@ -216,7 +223,9 @@ impl<'a, Dtype> ToView<'a, Dtype> for Vec<Dtype> {
 impl<Dtype> IntoTensor<Dtype> for Vec<Dtype> {
     fn into_tensor<S: Into<TensorShape>>(self, shape: S) -> Tensor<Dtype> {
         let shape: TensorShape = shape.into();
-        let num_elements = shape.dims().iter().fold(1, |acc, &x| acc * x);
+        let num_elements =
+            shape.dims().iter().fold(1, |acc, &x| acc * x) as usize;
+
         if num_elements != self.len() {
             debug!(
                 "Total number of elements ({}) in {:?} != vector length ({})",
@@ -248,9 +257,9 @@ macro_rules! impl_from_for_tensor_shape {
                 let strides: Vec<Stride> = shape
                     .iter()
                     .rev()
-                    .scan(1isize, |acc, len| {
+                    .scan(1i64, |acc, len| {
                         let s = *acc;
-                        *acc *= *len as isize;
+                        *acc *= *len as i64;
                         Some(s)
                     })
                     .collect();
@@ -258,7 +267,7 @@ macro_rules! impl_from_for_tensor_shape {
                 TensorShape {
                     dims_strides: shape
                         .iter()
-                        .map(|s| s.to_usize().unwrap())
+                        .map(|s| s.to_i64().unwrap())
                         .zip(strides.into_iter().rev())
                         .collect(),
                 }
@@ -387,7 +396,7 @@ mod tests {
             assert_eq!(shape.ndim(), 3);
         }
         {
-            let empty_shape = TensorShape::from(Vec::<usize>::new());
+            let empty_shape = TensorShape::from(Vec::<Length>::new());
             assert_eq!(empty_shape.dims(), vec![]);
             assert_eq!(empty_shape.strides(), vec![]);
             assert_eq!(empty_shape.ndim(), 0);
