@@ -224,9 +224,10 @@ impl<Dtype> IntoTensor<Dtype> for Vec<Dtype> {
                 shape,
                 self.len()
             );
-            assert!(
-                num_elements <= self.len(),
-                "Total number of elements ({}) in {:?} exceeds the vector length ({})",
+            assert_eq!(
+                num_elements,
+                self.len(),
+                "Total number of elements ({}) in {:?} != vector length ({})",
                 num_elements,
                 shape,
                 self.len()
