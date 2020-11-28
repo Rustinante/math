@@ -11,6 +11,7 @@ use crate::traits::{Collecting, ToIterator};
 
 /// The Histogram consists of `num_intervals` intervals between the `min` and
 /// the `max` value.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Histogram<T>
 where
     T: PartialOrd
