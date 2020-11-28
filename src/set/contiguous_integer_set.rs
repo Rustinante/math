@@ -38,6 +38,10 @@ impl<E: Integer + Copy> ContiguousIntegerSet<E> {
         self.start >= other.start && self.end <= other.end
     }
 
+    pub fn is_strict_subset_of(&self, other: &ContiguousIntegerSet<E>) -> bool {
+        self.is_subset_of(&other) && self != other
+    }
+
     #[inline]
     pub fn slice<
         'a,
@@ -347,5 +351,19 @@ mod tests {
         assert!(s1.has_non_empty_intersection_with(&s2));
         assert!(s1.has_non_empty_intersection_with(&s3));
         assert!(!s1.has_non_empty_intersection_with(&s4));
+    }
+
+    #[test]
+    fn test_strict_subset() {
+        let s1 = ContiguousIntegerSet::new(2, 4);
+        let s2 = ContiguousIntegerSet::new(2, 5);
+
+        assert!(s1.is_subset_of(&s2));
+        assert!(s1.is_strict_subset_of(&s2));
+
+        let s3 = ContiguousIntegerSet::new(2, 5);
+
+        assert!(s2.is_subset_of(&s3));
+        assert!(!s2.is_strict_subset_of(&s3));
     }
 }
