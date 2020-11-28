@@ -14,6 +14,22 @@ where
     fn get_end(&self) -> T;
 
     fn length(&self) -> T;
+
+    fn get_start_if_nonempty(&self) -> Option<T> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(self.get_start())
+        }
+    }
+
+    fn get_end_if_nonempty(&self) -> Option<T> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(self.get_end())
+        }
+    }
 }
 
 pub trait Coalesce<T>: Sized {
