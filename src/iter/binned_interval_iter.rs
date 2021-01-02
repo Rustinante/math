@@ -6,9 +6,8 @@ use crate::{
     interval::{traits::Interval, I64Interval},
     iter::CommonRefinementZip,
     set::traits::{Finite, Intersect},
-    stats::kahan_sigma,
 };
-use num::{Float, FromPrimitive, Num};
+use num::{FromPrimitive, Num};
 use std::cmp::Ordering;
 
 /// The value of the associated with `Min` and `Max` are the initial min and max
@@ -193,50 +192,6 @@ where
             current_interval_val,
             current_bin: None,
         }
-    }
-}
-
-impl<I, V> BinnedIntervalIter<I, V>
-where
-    I: Iterator,
-    V: Copy + Float + FromPrimitive + PartialOrd,
-{
-    /// # Example
-    /// ```
-    /// use math::{
-    ///     interval::I64Interval,
-    ///     iter::binned_interval_iter::{AggregateOp, IntoBinnedIntervalIter},
-    ///     partition::integer_interval_map::IntegerIntervalMap,
-    /// };
-    ///
-    /// let bin_size = 5;
-    /// let mut interval_map = IntegerIntervalMap::new();
-    /// interval_map.aggregate(I64Interval::new(-1, 1), 2);
-    /// interval_map.aggregate(I64Interval::new(14, 17), -1);
-    ///
-    /// // interval coordinates                        | value
-    /// // -1 | 0 1  |   ...   |        |              | +2
-    /// //    |      |   ...   |     14 | 15 16 17     | -1
-    /// //---------------------------------------------
-    /// // 0.4|| 0.8 ||  ...   || -0.2 || -0.6          | bin average
-    /// assert_eq!(
-    ///     interval_map
-    ///         .iter()
-    ///         .into_binned_interval_iter(
-    ///             bin_size,
-    ///             AggregateOp::Average,
-    ///             Box::new(|(&interval, &val)| (interval, val as f64))
-    ///         )
-    ///         .weighted_sum(),
-    ///     2.0
-    /// );
-    /// ```
-    pub fn weighted_sum(self) -> V {
-        kahan_sigma(self, |(interval, value)| {
-            let w = V::from_usize(interval.size())
-                .expect("failed to convert usize to type V");
-            w * value
-        })
     }
 }
 

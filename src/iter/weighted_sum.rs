@@ -1,6 +1,39 @@
 use crate::set::traits::Finite;
 use num::{FromPrimitive, Num};
 
+/// # Example
+/// ```
+/// use math::{
+///     interval::I64Interval,
+///     iter::{
+///         binned_interval_iter::{AggregateOp, IntoBinnedIntervalIter},
+///         weighted_sum::WeightedSum,
+///     },
+///     partition::integer_interval_map::IntegerIntervalMap,
+/// };
+///
+/// let bin_size = 5;
+/// let mut interval_map = IntegerIntervalMap::new();
+/// interval_map.aggregate(I64Interval::new(-1, 1), 2);
+/// interval_map.aggregate(I64Interval::new(14, 17), -1);
+///
+/// // interval coordinates                        | value
+/// // -1 | 0 1  |   ...   |        |              | +2
+/// //    |      |   ...   |     14 | 15 16 17     | -1
+/// //---------------------------------------------
+/// // 0.4|| 0.8 ||  ...   || -0.2 || -0.6         | bin average
+/// assert_eq!(
+///     interval_map
+///         .iter()
+///         .into_binned_interval_iter(
+///             bin_size,
+///             AggregateOp::Average,
+///             Box::new(|(&interval, &val)| (interval, val as f64))
+///         )
+///         .weighted_sum(),
+///     2.0
+/// );
+/// ```
 pub trait WeightedSum<Item, V>
 where
     V: Copy + Num + FromPrimitive + PartialOrd, {
