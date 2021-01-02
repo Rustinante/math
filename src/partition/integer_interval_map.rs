@@ -132,6 +132,7 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
     ///     (I64Interval::new(6, 7), 5),
     ///     (I64Interval::new(8, 8), 4),
     /// ];
+    /// assert_eq!(interval_map.len(), 5);
     /// for ((interval, val), (expected_interval, exptected_val)) in
     ///     interval_map.iter().zip(expected.iter())
     /// {
@@ -141,6 +142,43 @@ impl<T: Copy + Num> IntegerIntervalMap<T> {
     /// ```
     pub fn iter(&self) -> std::collections::btree_map::Iter<I64Interval, T> {
         self.map.iter()
+    }
+
+    /// Returns the number of common refinements resulted from aggregating the
+    /// intervals
+    ///
+    /// # Example
+    /// ```
+    /// use math::{
+    ///     interval::I64Interval,
+    ///     partition::integer_interval_map::IntegerIntervalMap,
+    /// };
+    ///
+    /// let mut interval_map = IntegerIntervalMap::new();
+    /// interval_map.aggregate(I64Interval::new(2, 6), 2.);
+    /// interval_map.aggregate(I64Interval::new(4, 8), 2.);
+    /// interval_map.aggregate(I64Interval::new(8, 9), 3.);
+    ///
+    /// // the common refinements are now [2, 3], [4, 6], [7, 7], [8, 8], [9, 9]
+    /// assert_eq!(interval_map.len(), 5);
+    ///
+    /// let expected = vec![
+    ///     (I64Interval::new(2, 3), 2.),
+    ///     (I64Interval::new(4, 6), 4.),
+    ///     (I64Interval::new(7, 7), 2.),
+    ///     (I64Interval::new(8, 8), 5.),
+    ///     (I64Interval::new(9, 9), 3.),
+    /// ];
+    ///
+    /// for ((interval, val), (expected_interval, exptected_val)) in
+    ///     interval_map.iter().zip(expected.iter())
+    /// {
+    ///     assert_eq!(interval, expected_interval);
+    ///     assert_eq!(val, exptected_val);
+    /// }
+    /// ```
+    pub fn len(&self) -> usize {
+        self.map.len()
     }
 
     /// Converts into the underlying `BTreeMap`
