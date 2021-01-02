@@ -2,7 +2,7 @@
 
 pub mod correlation;
 
-use num::traits::ToPrimitive;
+use num::{traits::ToPrimitive, Float};
 use std::{
     cmp::{min, Ordering},
     ops::Deref,
@@ -14,6 +14,25 @@ pub fn n_choose_2(n: usize) -> usize {
     } else {
         n * (n - 1) / 2
     }
+}
+
+pub fn kahan_sigma_float<E, I: Iterator<Item = E>, F, Dtype>(
+    element_iterator: I,
+    op: F,
+) -> Dtype
+where
+    F: Fn(E) -> Dtype,
+    Dtype: Float, {
+    // Kahan summation algorithm
+    let mut sum = Dtype::zero();
+    let mut lower_bits = Dtype::zero();
+    for a in element_iterator {
+        let y = op(a) - lower_bits;
+        let new_sum = sum + y;
+        lower_bits = (new_sum - sum) - y;
+        sum = new_sum;
+    }
+    sum
 }
 
 pub fn kahan_sigma<E, I: Iterator<Item = E>, F>(
