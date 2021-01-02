@@ -35,16 +35,17 @@ where
     sum
 }
 
-pub fn kahan_sigma_return_counter<E, I: Iterator<Item = E>, F>(
+pub fn kahan_sigma_return_counter<E, I: Iterator<Item = E>, F, Dtype>(
     element_iterator: I,
     op: F,
-) -> (f64, usize)
+) -> (Dtype, usize)
 where
-    F: Fn(E) -> f64, {
+    F: Fn(E) -> Dtype,
+    Dtype: Float, {
     let mut count = 0usize;
     // Kahan summation algorithm
-    let mut sum = 0f64;
-    let mut lower_bits = 0f64;
+    let mut sum = Dtype::zero();
+    let mut lower_bits = Dtype::zero();
     for a in element_iterator {
         count += 1;
         let y = op(a) - lower_bits;
