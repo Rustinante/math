@@ -16,7 +16,7 @@ pub fn n_choose_2(n: usize) -> usize {
     }
 }
 
-pub fn kahan_sigma_float<E, I: Iterator<Item = E>, F, Dtype>(
+pub fn kahan_sigma<E, I: Iterator<Item = E>, F, Dtype>(
     element_iterator: I,
     op: F,
 ) -> Dtype
@@ -26,42 +26,6 @@ where
     // Kahan summation algorithm
     let mut sum = Dtype::zero();
     let mut lower_bits = Dtype::zero();
-    for a in element_iterator {
-        let y = op(a) - lower_bits;
-        let new_sum = sum + y;
-        lower_bits = (new_sum - sum) - y;
-        sum = new_sum;
-    }
-    sum
-}
-
-pub fn kahan_sigma<E, I: Iterator<Item = E>, F>(
-    element_iterator: I,
-    op: F,
-) -> f64
-where
-    F: Fn(E) -> f64, {
-    // Kahan summation algorithm
-    let mut sum = 0f64;
-    let mut lower_bits = 0f64;
-    for a in element_iterator {
-        let y = op(a) - lower_bits;
-        let new_sum = sum + y;
-        lower_bits = (new_sum - sum) - y;
-        sum = new_sum;
-    }
-    sum
-}
-
-pub fn kahan_sigma_f32<E, I: Iterator<Item = E>, F>(
-    element_iterator: I,
-    op: F,
-) -> f32
-where
-    F: Fn(E) -> f32, {
-    // Kahan summation algorithm
-    let mut sum = 0f32;
-    let mut lower_bits = 0f32;
     for a in element_iterator {
         let y = op(a) - lower_bits;
         let new_sum = sum + y;
@@ -104,7 +68,7 @@ pub fn sum_f32<'a, A, T: Iterator<Item = &'a A>>(element_iterator: T) -> f32
 where
     A: Copy + ToPrimitive + 'a,
     &'a A: Deref, {
-    kahan_sigma_f32(element_iterator, |a| a.to_f32().unwrap())
+    kahan_sigma(element_iterator, |a| a.to_f32().unwrap())
 }
 
 #[inline]
@@ -127,7 +91,7 @@ pub fn sum_of_squares_f32<'a, A, T: Iterator<Item = &'a A>>(
 where
     A: Copy + ToPrimitive + 'a,
     &'a A: Deref, {
-    kahan_sigma_f32(element_iterator, |a| {
+    kahan_sigma(element_iterator, |a| {
         let a_f32 = a.to_f32().unwrap();
         a_f32 * a_f32
     })
@@ -140,7 +104,7 @@ pub fn sum_of_fourth_power_f32<'a, A, T: Iterator<Item = &'a A>>(
 where
     A: Copy + ToPrimitive + 'a,
     &'a A: Deref, {
-    kahan_sigma_f32(element_iterator, |a| {
+    kahan_sigma(element_iterator, |a| {
         let a_f32 = a.to_f32().unwrap();
         a_f32 * a_f32 * a_f32 * a_f32
     })

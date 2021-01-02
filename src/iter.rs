@@ -6,7 +6,7 @@ pub mod concatenated_iter;
 pub mod flat_zip;
 pub mod union_zip;
 
-use crate::{set::traits::Finite, stats::kahan_sigma_float};
+use crate::set::traits::Finite;
 pub use binned_interval_iter::{
     AggregateOp, BinnedIntervalIter, IntoBinnedIntervalIter,
 };
@@ -32,7 +32,7 @@ macro_rules! impl_weighed_sum_float {
             P: Finite,
         {
             fn weighted_sum(self) -> $dtype {
-                kahan_sigma_float(self, |(interval, value)| {
+                crate::stats::kahan_sigma(self, |(interval, value)| {
                     (interval.size() as $dtype) * value
                 })
             }

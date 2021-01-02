@@ -6,7 +6,7 @@ use crate::{
     interval::{traits::Interval, I64Interval},
     iter::CommonRefinementZip,
     set::traits::{Finite, Intersect},
-    stats::kahan_sigma_float,
+    stats::kahan_sigma,
 };
 use num::{Float, FromPrimitive, Num};
 use std::cmp::Ordering;
@@ -232,7 +232,7 @@ where
     /// );
     /// ```
     pub fn weighted_sum(self) -> V {
-        kahan_sigma_float(self, |(interval, value)| {
+        kahan_sigma(self, |(interval, value)| {
             let w = V::from_usize(interval.size())
                 .expect("failed to convert usize to type V");
             w * value
