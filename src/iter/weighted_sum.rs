@@ -1,5 +1,5 @@
 use crate::set::traits::Finite;
-use num::{FromPrimitive, Num};
+use num::{Float, FromPrimitive, Num};
 
 /// # Example
 /// ```
@@ -36,28 +36,24 @@ use num::{FromPrimitive, Num};
 /// ```
 pub trait WeightedSum<Item, V>
 where
-    V: Copy + Num + FromPrimitive + PartialOrd, {
+    V: Copy + Num, {
     fn weighted_sum(self) -> V;
 }
 
-macro_rules! impl_weighed_sum_float {
-    ($dtype:ty) => {
-        impl<I, P> WeightedSum<(P, $dtype), $dtype> for I
-        where
-            I: Iterator<Item = (P, $dtype)>,
-            P: Finite,
-        {
-            fn weighted_sum(self) -> $dtype {
-                crate::stats::kahan_sigma(self, |(interval, value)| {
-                    (interval.size() as $dtype) * value
-                })
-            }
-        }
-    };
+impl<I, P, Dtype> WeightedSum<(P, Dtype), Dtype> for I
+where
+    I: Iterator<Item = (P, Dtype)>,
+    P: Finite,
+    Dtype: Float + FromPrimitive,
+{
+    fn weighted_sum(self) -> Dtype {
+        crate::stats::kahan_sigma(self, |(interval, value)| {
+            Dtype::from_usize(interval.size())
+                .expect("failed to convert from usize to Dtype")
+                * value
+        })
+    }
 }
-
-impl_weighed_sum_float!(f32);
-impl_weighed_sum_float!(f64);
 
 #[cfg(test)]
 mod tests {
