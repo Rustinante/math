@@ -1,9 +1,8 @@
 //! # Modeling mathematical constructs and their associated operations.
 
-#![feature(drain_filter)]
-#![feature(bool_to_option)]
+#![feature(extract_if)]
+#![feature(type_ascription)]
 
-#[macro_use]
 extern crate log;
 
 pub mod histogram;

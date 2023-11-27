@@ -434,7 +434,7 @@ mod tests {
                 Ok(h) => h,
                 Err(why) => {
                     eprintln!("{}", why);
-                    assert!(false, why);
+                    assert!(false, "{}", why);
                     return;
                 }
             };

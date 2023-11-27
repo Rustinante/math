@@ -150,7 +150,7 @@ impl<E: Integer + Copy + ToPrimitive> OrderedIntegerSet<E> {
 
     #[inline]
     pub fn remove_empty_intervals(&mut self) {
-        self.intervals.drain_filter(|i| i.is_empty());
+        let _ = self.intervals.extract_if(|i| i.is_empty());
     }
 
     #[inline]
